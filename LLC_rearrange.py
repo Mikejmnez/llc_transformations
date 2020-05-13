@@ -28,17 +28,24 @@ class LLCtransformation:
         """
         Nx = len(ds['X'])
         Ny = len(ds['Y'])
-        nrot_faces, Nx_nrot, Ny_nrot, rot_faces, Nx_rot, Ny_rot = face_connect(ds, all_faces)
+
+        if isinstance(faces, str):
+            faces = np.arange(13)
+
+        nrot_faces, Nx_nrot, Ny_nrot, rot_faces, Nx_rot, Ny_rot = face_connect(ds, faces)
 
         if isinstance(varlist, list):
             varName = varlist[0]
         elif isinstance(varlist, str):
-            varName = varlist
+            if varlist == 'all':
+                varName = 'Depth'
+            else:
+                varName = varlist
 
-        arc_faces, Nx_ac_nrot, Ny_ac_nrot, Nx_ac_rot, Ny_ac_rot, ARCT = arct_connect(ds, varName, all_faces)
+        arc_faces, Nx_ac_nrot, Ny_ac_nrot, Nx_ac_rot, Ny_ac_rot, ARCT = arct_connect(ds, varName, faces)
 
-        acnrot_faces = [k for k in arc_faces if k in np.array([2,5])]
-        acrot_faces = [k for k in arc_faces if k in np.array([7,10])]
+        acnrot_faces = [k for k in arc_faces if k in np.array([2, 5])]
+        acrot_faces = [k for k in arc_faces if k in np.array([7, 10])]
 
         nrot_A = [k for k in nrot_faces if k in np.arange(3)]
         nrot_B = [k for k in nrot_faces if k in np.arange(3, 6)]
@@ -71,9 +78,9 @@ class LLCtransformation:
 
         X0 = 0
         Xr0 = 0
-        if centered_ON == 'Atlantic':
+        if centered == 'Atlantic':
             X0 = tNy_rot
-        elif centered_ON == 'Pacific':
+        elif centered == 'Pacific':
             Xr0 = tNx_nrot
 
         NR_dsnew = make_array(ds, tNx_nrot, tNy_nrot, X0)
@@ -103,7 +110,7 @@ class LLCtransformation:
                         vName = ds[varName].attrs['mates']
                     if len(dims.X) == 1 and varName not in metrics:
                         fac = -1
-                arc_faces, Nx_ac_nrot, Ny_ac_nrot, Nx_ac_rot, Ny_ac_rot, ARCT = arct_connect(ds, varName, all_faces)
+                arc_faces, Nx_ac_nrot, Ny_ac_nrot, Nx_ac_rot, Ny_ac_rot, ARCT = arct_connect(ds, varName, faces)
                 for k in range(len(nrot_faces)):
                     data = ds[varName].isel(face=nrot_faces[k]).values
                     xslice = slice(POSX_nrot[k][0], POSX_nrot[k][1])
@@ -137,10 +144,11 @@ class LLCtransformation:
                     data = ARCT[tk]
                     R_dsnew[varName].isel(**arg)[:] = data.values
 
-        if centered_ON == 'Atlantic':
+        if centered == 'Atlantic':
             DS = R_dsnew.combine_first(NR_dsnew)
-        elif centered_ON == 'Pacific':
+        elif centered == 'Pacific':
             DS = NR_dsnew.combine_first(R_dsnew)
+
         DS = DS.reset_coords()
 
         return DS

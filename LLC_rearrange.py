@@ -6,15 +6,18 @@ from set_dims import Dims
 class LLCtransformation:
     """ A class containing the transformation of LLCgrids"""
 
-    def __init__(self, ds, varlist, transformation, centered='Atlantic', faces='all'):
+    def __init__(self,
+        ds,
+        varlist,
+        transformation,
+        centered='Atlantic',
+        faces='all',
+    ):
         self._ds = ds  # xarray.DataSet
         self._varlist = varlist  # variables names to be transformed
         self._transformation = transformation  # str - type of transf
         self._centered = centered  # str - where to be centered
         self._faces = faces  # faces involved in transformation
-
-        if isinstance(centered, str) == False:
-            print('error')
 
     @classmethod
     def arctic_crown(
@@ -38,9 +41,11 @@ class LLCtransformation:
             varName = varlist[0]
         elif isinstance(varlist, str):
             if varlist == 'all':
+                varlist = ds.data_vars
                 varName = 'Depth'
             else:
                 varName = varlist
+                varlist = [varlist]
 
         arc_faces, Nx_ac_nrot, Ny_ac_nrot, Nx_ac_rot, Ny_ac_rot, ARCT = arct_connect(ds, varName, faces)
 
@@ -74,7 +79,7 @@ class LLCtransformation:
 
         POSY_nrot, POSX_nrot, POSYarc_nrot, POSXarc_nrot = pos_chunks(nrot_faces, acnrot_faces,chunksY_nrot, chunksX_nrot)
 
-        POSY_rot, POSX_rot, POSYa_rot, POSXa_rot = pos_chunks(rot_faces, acrot_faces, chunksY_rot, chunksX_rot)
+        POSY_rot, POSX_rot, POSYa_rot, POSXa_rot = pos_chunks(rot_faces,acrot_faces, chunksY_rot, chunksX_rot)
 
         X0 = 0
         Xr0 = 0
@@ -87,9 +92,8 @@ class LLCtransformation:
         R_dsnew = make_array(ds, tNy_rot, tNx_rot, Xr0)
 
         metrics = ['dxC', 'dyC', 'dxG', 'dyG']
-        for varName in ds.data_vars:
+        for varName in varlist:
             vName = varName
-            print(varName)
             fac = 1
             dims = Dims([dim for dim in ds[varName].dims if dim != 'face'][::-1])
             if len(ds[varName].dims) == 1:

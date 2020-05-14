@@ -33,7 +33,7 @@ class LLCtransformation:
         Ny = len(ds['Y'])
 
         if isinstance(faces, str):
-            faces = np.arange([2, 5, 6, 7, 10])
+            faces = np.array([2, 5, 6, 7, 10])
 
         if isinstance(varlist, str):
             if varlist == 'all':
@@ -47,30 +47,24 @@ class LLCtransformation:
         chunksX, chunksY = make_chunks(tNx, tNy)
         # Set ordered position wrt array layout, in accordance to location
         # of faces
+        ix = [0,1,1,2,1] # x-position of chunk in x according to face index
+        jy = [1,0,1,1,2] # y-position of chunk in y according to face index
         psX = []
-        psX.append(chunksX[0])
-        psX.append(chunksX[1])
-        psX.append(chunksX[2])
-        psX.append(chunksX[1])
-        psX.append(chunksX[1])
         psY = []
-        psY.append(chunksY[1])
-        psY.append(chunksY[0])
-        psY.append(chunksY[1])
-        psY.append(chunksY[2])
-        psY.append(chunksY[1])
+        for i in range(len(ix)):
+            psX.append(chunksX[ix[i]])
+            psY.append(chunksY[jy[i]])
 
-        dsnew = make_array(ds, Nx, Ny)
+        dsnew = make_array(ds, 3 * Nx,3 *  Ny)
         metrics = ['dxC', 'dyC', 'dxG', 'dyG']
 
         # rotated and non-rotated faces wrt arctic face
-        nrot = np.array([5, 7])
-        rot = np.array([2, 10])
-
+        nrot = np.array([6, 5, 7])
+        rot = np.array([2])
+        irot = np.array([10])
 
         for varName in varlist:
             vName = varName
-            fac = 1
             dims = Dims([dim for dim in ds[varName].dims if dim != 'face'][::-1])
             if len(ds[varName].dims) == 1:
                 dsnew[varName] = (dims._vars[::-1], ds[varName].data)
@@ -80,26 +74,43 @@ class LLCtransformation:
                 dsnew[varName] = (dims._vars[::-1],
                                   np.nan * np.zeros(_shape))
                 dsnew[varName].attrs = ds[varName].attrs
-                if len(dims.X) + len(dims.Y) == 4:  # vector fields
-                    if 'mates' in list(ds[varName].attrs):
-                        vName = ds[varName].attrs['mates']
-                    if len(dims.X) == 1 and varName not in metrics:
-                        fac = -1
                 for k in range(len(faces)):
-                    data = fac * ds[varName].isel(face=faces[k]).values
-                    xslice = slice(POSX_nrot[k][0], POSX_nrot[k][1])
-                    yslice = slice(POSY_nrot[k][0], POSY_nrot[k][1])
-                    if k in nrot:
-                        arg = {dims.X: xslice, dims.Y: yslice}
-                        dsnew[varName].isel(**arg)[:] = data
-                    elif k in rot:
-                        arg = {dims.Y: yslice, dims.X: xslice}
+                    fac = 1
+                    xslice = slice(psX[k][0], psX[k][1])
+                    yslice = slice(psY[k][0], psY[k][1])
+                    arg = {dims.X: xslice, dims.Y: yslice}
+                    data = fac * ds[varName].isel(face=faces[k])
+                    if faces[k] in nrot:
+                        dsnew[varName].isel(**arg)[:] = data.values
+                    else:
                         dtr = list(dims)[::-1]
                         dtr[-1], dtr[-2] = dtr[-2], dtr[-1]
-                        ndims = Dims(list(data.dims)[::-1])
-                        sort_arg = {'variables': ndims.X, 'ascending': False}
+                        if faces[k] in rot:
+                            sort_arg = {'variables': dims.X,'ascending': False}
+                            if len(dims.X) + len(dims.Y) == 4:
+                                if 'mates' in list(ds[varName].attrs):
+                                    vName = ds[varName].attrs['mates']
+                                    data = ds[vName].isel(face=faces[k])
+                                    if dims.X == 3 and vName not in metrics:
+                                        fac=-1
+                                _DIMS = [dim for dim in ds[vName].dims if dim != 'face']
+                                _dims = Dims(_DIMS[::-1])
+                                sort_arg = {'variables': _dims.X,
+                                            'ascending': False}
+                        elif faces[k] in irot:
+                            sort_arg = {'variables': dims.Y,'ascending': False}
+                            if len(dims.X) + len(dims.Y) == 4:
+                                if 'mates' in list(ds[varName].attrs):
+                                    vName = ds[varName].attrs['mates']
+                                    data = ds[vName].isel(face=faces[k])
+                                    if dims.X == 3 and vName not in metrics:
+                                        fac = -1
+                                _DIMS = [dim for dim in ds[vName].dims if dim != 'face']
+                                _dims = Dims(_DIMS[::-1])
+                                sort_arg = {'variables': _dims.Y,
+                                            'ascending': False}
                         data = data.sortby(**sort_arg)
-                        dsnew[varName].isel(**arg).transpose(*dtr)[:] = data.values
+                        dsnew[vName].isel(**arg).transpose(*dtr)[:] = data.values
         return dsnew
 
 

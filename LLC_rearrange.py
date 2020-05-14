@@ -24,7 +24,7 @@ class LLCtransformation:
         self,
         ds,
         varlist,
-        centered,
+        centered='Arctic',
         faces='all',
     ):
         """ Transforms the dataset by removing faces as a dimension, into a new dataset centered at the arctic, while preserving the grid.
@@ -62,13 +62,15 @@ class LLCtransformation:
             Arot = np.array([])
             Brot = np.array([2])
             Crot = np.array([5,6,7])
-        else:  # wrt to Arctic face
+        elif centered = 'Arctic':  # wrt to Arctic face
             ix = [0,1,1,2,1] # x-position of chunk in x according to face index
             jy = [1,0,1,1,2] # y-position of chunk in y according to face index
             nrot = np.array([6, 5, 7])
             Arot = np.array([10])
             Brot = np.array([])
             Crot = np.array([2])
+        else:
+            print('raise error: Centering not supported')
         psX = []
         psY = []
         for i in range(len(ix)):

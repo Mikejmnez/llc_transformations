@@ -92,8 +92,8 @@ class LLCtransformation:
                                 if 'mates' in list(ds[varName].attrs):
                                     vName = ds[varName].attrs['mates']
                                     data = ds[vName].isel(face=faces[k])
-                                    if dims.X == 3 and vName not in metrics:
-                                        fac=-1
+                                    if len(dims.Y) == 3 and vName not in metrics:
+                                        fac = -1
                                 _DIMS = [dim for dim in ds[vName].dims if dim != 'face']
                                 _dims = Dims(_DIMS[::-1])
                                 sort_arg = {'variables': _dims.X,
@@ -104,7 +104,7 @@ class LLCtransformation:
                                 if 'mates' in list(ds[varName].attrs):
                                     vName = ds[varName].attrs['mates']
                                     data = ds[vName].isel(face=faces[k])
-                                    if dims.X == 3 and vName not in metrics:
+                                    if len(dims.X) == 3 and vName not in metrics:
                                         fac = -1
                                 _DIMS = [dim for dim in ds[vName].dims if dim != 'face']
                                 _dims = Dims(_DIMS[::-1])

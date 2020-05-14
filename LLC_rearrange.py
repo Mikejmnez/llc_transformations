@@ -65,7 +65,6 @@ class LLCtransformation:
 
         for varName in varlist:
             vName = varName
-            print(varName)
             dims = Dims([dim for dim in ds[varName].dims if dim != 'face'][::-1])
             if len(ds[varName].dims) == 1:
                 dsnew[varName] = (dims._vars[::-1], ds[varName].data)
@@ -80,14 +79,15 @@ class LLCtransformation:
                     xslice = slice(psX[k][0], psX[k][1])
                     yslice = slice(psY[k][0], psY[k][1])
                     arg = {dims.X: xslice, dims.Y: yslice}
-                    data = fac * ds[varName].isel(face=faces[k])
+                    data = ds[varName].isel(face=faces[k])
                     if faces[k] in nrot:
                         dsnew[varName].isel(**arg)[:] = data.values
                     else:
                         dtr = list(dims)[::-1]
                         dtr[-1], dtr[-2] = dtr[-2], dtr[-1]
                         if faces[k] in rot:
-                            sort_arg = {'variables': dims.X,'ascending': False}
+                            sort_arg = {'variables': dims.X,
+                                        'ascending': False}
                             if len(dims.X) + len(dims.Y) == 4:
                                 if 'mates' in list(ds[varName].attrs):
                                     vName = ds[varName].attrs['mates']
@@ -110,7 +110,7 @@ class LLCtransformation:
                                 _dims = Dims(_DIMS[::-1])
                                 sort_arg = {'variables': _dims.Y,
                                             'ascending': False}
-                        data = data.sortby(**sort_arg)
+                        data = fac * data.sortby(**sort_arg)
                         dsnew[varName].isel(**arg).transpose(*dtr)[:] = data.values
         return dsnew
 

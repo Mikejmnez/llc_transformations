@@ -47,8 +47,28 @@ class LLCtransformation:
         chunksX, chunksY = make_chunks(tNx, tNy)
         # Set ordered position wrt array layout, in accordance to location
         # of faces
-        ix = [0,1,1,2,1] # x-position of chunk in x according to face index
-        jy = [1,0,1,1,2] # y-position of chunk in y according to face index
+        if centered == 'Atlantic':
+            ix = [1,2,1,1,0]
+            jy = [0,1,1,2,1]
+            nrot = np.array([2])
+            Arot = np.array([5, 6, 7])
+            Brot = np.array([10])
+            Crot = np.array([0])
+
+        elif centered == 'Pacific':
+            ix = [1,0,1,1,2]
+            jy = [2,1,1,0,1]
+            nrot = np.array([10])
+            Arot = np.array([])
+            Brot = np.array([2])
+            Crot = np.array([5,6,7])
+        else:  # wrt to Arctic face
+            ix = [0,1,1,2,1] # x-position of chunk in x according to face index
+            jy = [1,0,1,1,2] # y-position of chunk in y according to face index
+            nrot = np.array([6, 5, 7])
+            Arot = np.array([10])
+            Brot = np.array([])
+            Crot = np.array([2])
         psX = []
         psY = []
         for i in range(len(ix)):
@@ -58,10 +78,6 @@ class LLCtransformation:
         dsnew = make_array(ds, 3 * Nx,3 *  Ny)
         metrics = ['dxC', 'dyC', 'dxG', 'dyG']
 
-        # rotated and non-rotated faces wrt arctic face
-        nrot = np.array([6, 5, 7])
-        rot = np.array([2])
-        irot = np.array([10])
 
         for varName in varlist:
             vName = varName
@@ -85,7 +101,7 @@ class LLCtransformation:
                     else:
                         dtr = list(dims)[::-1]
                         dtr[-1], dtr[-2] = dtr[-2], dtr[-1]
-                        if faces[k] in rot:
+                        if faces[k] in Crot:
                             sort_arg = {'variables': dims.X,
                                         'ascending': False}
                             if len(dims.X) + len(dims.Y) == 4:
@@ -98,8 +114,9 @@ class LLCtransformation:
                                 _dims = Dims(_DIMS[::-1])
                                 sort_arg = {'variables': _dims.X,
                                             'ascending': False}
-                        elif faces[k] in irot:
-                            sort_arg = {'variables': dims.Y,'ascending': False}
+                        elif faces[k] in Arot:
+                            sort_arg = {'variables': dims.Y,
+                                        'ascending': False}
                             if len(dims.X) + len(dims.Y) == 4:
                                 if 'mates' in list(ds[varName].attrs):
                                     vName = ds[varName].attrs['mates']
@@ -109,6 +126,19 @@ class LLCtransformation:
                                 _DIMS = [dim for dim in ds[vName].dims if dim != 'face']
                                 _dims = Dims(_DIMS[::-1])
                                 sort_arg = {'variables': _dims.Y,
+                                            'ascending': False}
+                        elif faces[k] in Brot:
+                            sort_arg = {'variables': [dims.X, dims.Y],
+                                        'ascending': False}
+                            if len(dims.X) + len(dims.Y) == 4:
+                                if 'mates' in list(ds[varName].attrs):
+                                    vName = ds[varName].attrs['mates']
+                                    data = ds[vName].isel(face=faces[k])
+                                    if vName not in metrics:
+                                        fac = -1
+                                _DIMS = [dim for dim in ds[vName].dims if dim != 'face']
+                                _dims = Dims(_DIMS[::-1])
+                                sort_arg = {'variables': [_dims.X,_dims.Y],
                                             'ascending': False}
                         data = fac * data.sortby(**sort_arg)
                         dsnew[varName].isel(**arg).transpose(*dtr)[:] = data.values

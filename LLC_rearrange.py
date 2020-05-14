@@ -62,7 +62,7 @@ class LLCtransformation:
             Arot = np.array([])
             Brot = np.array([2])
             Crot = np.array([5,6,7])
-        elif centered = 'Arctic':  # wrt to Arctic face
+        elif centered == 'Arctic':  # wrt to Arctic face
             ix = [0,1,1,2,1] # x-position of chunk in x according to face index
             jy = [1,0,1,1,2] # y-position of chunk in y according to face index
             nrot = np.array([6, 5, 7])
@@ -133,17 +133,13 @@ class LLCtransformation:
                             sort_arg = {'variables': [dims.X, dims.Y],
                                         'ascending': False}
                             if len(dims.X) + len(dims.Y) == 4:
-                                if 'mates' in list(ds[varName].attrs):
-                                    vName = ds[varName].attrs['mates']
-                                    data = ds[vName].isel(face=faces[k])
-                                    if vName not in metrics:
-                                        fac = -1
-                                _DIMS = [dim for dim in ds[vName].dims if dim != 'face']
-                                _dims = Dims(_DIMS[::-1])
-                                sort_arg = {'variables': [_dims.X,_dims.Y],
-                                            'ascending': False}
+                                if vName not in metrics:
+                                    fac = -1
                         data = fac * data.sortby(**sort_arg)
-                        dsnew[varName].isel(**arg).transpose(*dtr)[:] = data.values
+                        if faces[k] in Brot:
+                            dsnew[varName].isel(**arg)[:] = data.values
+                        else:
+                            dsnew[varName].isel(**arg).transpose(*dtr)[:] = data.values
         return dsnew
 
 

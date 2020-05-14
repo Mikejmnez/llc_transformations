@@ -20,6 +20,130 @@ class LLCtransformation:
         self._faces = faces  # faces involved in transformation
 
     @classmethod
+    def arctic_centered(
+        self,
+        ds,
+        varlist,
+        centered='Arctic',
+        faces='all',
+    ):
+        """ Transforms the dataset by removing faces as a dimension, into a new dataset centered at the arctic, while preserving the grid.
+        """
+        Nx = len(ds['X'])
+        Ny = len(ds['Y'])
+
+        if isinstance(faces, str):
+            faces = np.array([2, 5, 6, 7, 10])
+
+        if isinstance(varlist, str):
+            if varlist == 'all':
+                varlist = ds.data_vars
+            else:
+                varlist = [varlist]
+
+        tNx = np.arange(0,  3 * Nx + 1, Nx)
+        tNy = np.arange(0,  3 * Ny + 1, Ny)
+
+        chunksX, chunksY = make_chunks(tNx, tNy)
+        # Set ordered position wrt array layout, in accordance to location
+        # of faces
+        if centered == 'Atlantic':
+            ix = [1,2,1,1,0]
+            jy = [0,1,1,2,1]
+            nrot = np.array([2])
+            Arot = np.array([5, 6, 7])
+            Brot = np.array([10])
+            Crot = np.array([0])
+
+        elif centered == 'Pacific':
+            ix = [1,0,1,1,2]
+            jy = [2,1,1,0,1]
+            nrot = np.array([10])
+            Arot = np.array([])
+            Brot = np.array([2])
+            Crot = np.array([5,6,7])
+        elif centered == 'Arctic':  # wrt to Arctic face
+            ix = [0,1,1,2,1] # x-position of chunk in x according to face index
+            jy = [1,0,1,1,2] # y-position of chunk in y according to face index
+            nrot = np.array([6, 5, 7])
+            Arot = np.array([10])
+            Brot = np.array([])
+            Crot = np.array([2])
+        else:
+            print('raise error: Centering not supported')
+        psX = []
+        psY = []
+        for i in range(len(ix)):
+            psX.append(chunksX[ix[i]])
+            psY.append(chunksY[jy[i]])
+
+        dsnew = make_array(ds, 3 * Nx,3 *  Ny)
+        metrics = ['dxC', 'dyC', 'dxG', 'dyG']
+
+
+        for varName in varlist:
+            vName = varName
+            dims = Dims([dim for dim in ds[varName].dims if dim != 'face'][::-1])
+            if len(ds[varName].dims) == 1:
+                dsnew[varName] = (dims._vars[::-1], ds[varName].data)
+                dsnew[varName].attrs = ds[varName].attrs
+            else:
+                _shape = tuple([len(dsnew[var]) for var in tuple(dims)[::-1]])
+                dsnew[varName] = (dims._vars[::-1],
+                                  np.nan * np.zeros(_shape))
+                dsnew[varName].attrs = ds[varName].attrs
+                for k in range(len(faces)):
+                    fac = 1
+                    xslice = slice(psX[k][0], psX[k][1])
+                    yslice = slice(psY[k][0], psY[k][1])
+                    arg = {dims.X: xslice, dims.Y: yslice}
+                    data = ds[varName].isel(face=faces[k])
+                    if faces[k] in nrot:
+                        dsnew[varName].isel(**arg)[:] = data.values
+                    else:
+                        dtr = list(dims)[::-1]
+                        dtr[-1], dtr[-2] = dtr[-2], dtr[-1]
+                        if faces[k] in Crot:
+                            sort_arg = {'variables': dims.X,
+                                        'ascending': False}
+                            if len(dims.X) + len(dims.Y) == 4:
+                                if 'mates' in list(ds[varName].attrs):
+                                    vName = ds[varName].attrs['mates']
+                                    data = ds[vName].isel(face=faces[k])
+                                    if len(dims.Y) == 3 and vName not in metrics:
+                                        fac = -1
+                                _DIMS = [dim for dim in ds[vName].dims if dim != 'face']
+                                _dims = Dims(_DIMS[::-1])
+                                sort_arg = {'variables': _dims.X,
+                                            'ascending': False}
+                        elif faces[k] in Arot:
+                            sort_arg = {'variables': dims.Y,
+                                        'ascending': False}
+                            if len(dims.X) + len(dims.Y) == 4:
+                                if 'mates' in list(ds[varName].attrs):
+                                    vName = ds[varName].attrs['mates']
+                                    data = ds[vName].isel(face=faces[k])
+                                    if len(dims.X) == 3 and vName not in metrics:
+                                        fac = -1
+                                _DIMS = [dim for dim in ds[vName].dims if dim != 'face']
+                                _dims = Dims(_DIMS[::-1])
+                                sort_arg = {'variables': _dims.Y,
+                                            'ascending': False}
+                        elif faces[k] in Brot:
+                            sort_arg = {'variables': [dims.X, dims.Y],
+                                        'ascending': False}
+                            if len(dims.X) + len(dims.Y) == 4:
+                                if vName not in metrics:
+                                    fac = -1
+                        data = fac * data.sortby(**sort_arg)
+                        if faces[k] in Brot:
+                            dsnew[varName].isel(**arg)[:] = data.values
+                        else:
+                            dsnew[varName].isel(**arg).transpose(*dtr)[:] = data.values
+        return dsnew
+
+
+    @classmethod
     def arctic_crown(
         self,
         ds,
@@ -168,7 +292,7 @@ def make_chunks(Nx, Ny):
     return chunksX, chunksY
 
 
-def make_array(ds, tNx, tNy, X0):
+def make_array(ds, tNx, tNy, X0=0):
     coords_nrot = {'X': (('X',), np.arange(X0, X0 + tNx), {'axis': 'X'}),
                    'Xp1': (('Xp1',), np.arange(X0, X0 + tNx), {'axis': 'X'}),
                    'Y': (('Y',), np.arange(tNy), {'axis': 'Y'}),

@@ -65,6 +65,7 @@ class LLCtransformation:
 
         for varName in varlist:
             vName = varName
+            print(varName)
             dims = Dims([dim for dim in ds[varName].dims if dim != 'face'][::-1])
             if len(ds[varName].dims) == 1:
                 dsnew[varName] = (dims._vars[::-1], ds[varName].data)
@@ -110,7 +111,7 @@ class LLCtransformation:
                                 sort_arg = {'variables': _dims.Y,
                                             'ascending': False}
                         data = data.sortby(**sort_arg)
-                        dsnew[vName].isel(**arg).transpose(*dtr)[:] = data.values
+                        dsnew[varName].isel(**arg).transpose(*dtr)[:] = data.values
         return dsnew
 
 

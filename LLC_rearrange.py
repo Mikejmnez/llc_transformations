@@ -6,7 +6,8 @@ from set_dims import Dims
 class LLCtransformation:
     """ A class containing the transformation of LLCgrids"""
 
-    def __init__(self,
+    def __init__(
+        self,
         ds,
         varlist,
         transformation,
@@ -41,30 +42,30 @@ class LLCtransformation:
             else:
                 varlist = [varlist]
 
-        tNx = np.arange(0,  3 * Nx + 1, Nx)
-        tNy = np.arange(0,  3 * Ny + 1, Ny)
+        tNx = np.arange(0, 3 * Nx + 1, Nx)
+        tNy = np.arange(0, 3 * Ny + 1, Ny)
 
         chunksX, chunksY = make_chunks(tNx, tNy)
         # Set ordered position wrt array layout, in accordance to location
         # of faces
         if centered == 'Atlantic':
-            ix = [1,2,1,1,0]
-            jy = [0,1,1,2,1]
+            ix = [1, 2, 1, 1, 0]
+            jy = [0, 1, 1, 2, 1]
             nrot = np.array([2])
             Arot = np.array([5, 6, 7])
             Brot = np.array([10])
             Crot = np.array([0])
 
         elif centered == 'Pacific':
-            ix = [1,0,1,1,2]
-            jy = [2,1,1,0,1]
+            ix = [1, 0, 1, 1, 2]
+            jy = [2, 1, 1, 0, 1]
             nrot = np.array([10])
             Arot = np.array([])
             Brot = np.array([2])
-            Crot = np.array([5,6,7])
-        elif centered == 'Arctic':  # wrt to Arctic face
-            ix = [0,1,1,2,1] # x-position of chunk in x according to face index
-            jy = [1,0,1,1,2] # y-position of chunk in y according to face index
+            Crot = np.array([5, 6, 7])
+        elif centered == 'Arctic':
+            ix = [0, 1, 1, 2, 1]
+            jy = [1, 0, 1, 1, 2]
             nrot = np.array([6, 5, 7])
             Arot = np.array([10])
             Brot = np.array([])
@@ -77,7 +78,7 @@ class LLCtransformation:
             psX.append(chunksX[ix[i]])
             psY.append(chunksY[jy[i]])
 
-        dsnew = make_array(ds, 3 * Nx,3 *  Ny)
+        dsnew = make_array(ds, 3 * Nx, 3 * Ny)
         metrics = ['dxC', 'dyC', 'dxG', 'dyG']
 
         dsnew = init_vars(ds, dsnew, varlist)
@@ -287,15 +288,24 @@ def make_chunks(Nx, Ny):
 
 
 def make_array(ds, tNx, tNy, X0=0):
-    coords_nrot = {'X': (('X',), np.arange(X0, X0 + tNx), {'axis': 'X'}),
-                   'Xp1': (('Xp1',), np.arange(X0, X0 + tNx), {'axis': 'X'}),
-                   'Y': (('Y',), np.arange(tNy), {'axis': 'Y'}),
-                   'Yp1': (('Yp1',), np.arange(tNy), {'axis': 'Y'}),
-                   'Z': (('Z',), np.arange(len(ds['Z'])), {'axis': 'Z'}),
-                   'Zp1': (('Zp1',), np.arange(len(ds['Zp1'])), {'axis': 'Z'}),
-                   'Zl': (('Zl',), np.arange(len(ds['Zl'])), {'axis': 'Z'}),
-                   'time': (('time',), ds['time'].data, {'axis': 'T'}),
-                   }
+    if 'Z' in ds.coords:
+        coords_nrot = {'X': (('X',), np.arange(X0, X0 + tNx), {'axis': 'X'}),
+                       'Xp1':(('Xp1',), np.arange(X0, X0 + tNx), {'axis':'X'}),
+                       'Y': (('Y',), np.arange(tNy), {'axis': 'Y'}),
+                       'Yp1': (('Yp1',), np.arange(tNy), {'axis': 'Y'}),
+                       'Z': (('Z',), ds['Z'].data, {'axis': 'Z'}),
+                       'Zp1': (('Zp1',), ds['Zp1'].data, {'axis': 'Z'}),
+                       'Zl': (('Zl',), ds['Zl'].data, {'axis': 'Z'}),
+                       'time': (('time',), ds['time'].data, {'axis': 'T'}),
+                       }
+    else:
+        coords_nrot = {'X': (('X',), np.arange(X0, X0 + tNx), {'axis': 'X'}),
+                       'Xp1':(('Xp1',), np.arange(X0, X0 + tNx), {'axis':'X'}),
+                       'Y': (('Y',), np.arange(tNy), {'axis': 'Y'}),
+                       'Yp1': (('Yp1',), np.arange(tNy), {'axis': 'Y'}),
+                       'time': (('time',), ds['time'].data, {'axis': 'T'}),
+                       }
+
     dsnew = xr.Dataset(coords=coords_nrot)
     for dim in dsnew.dims:
         dsnew[dim].attrs = ds[dim].attrs

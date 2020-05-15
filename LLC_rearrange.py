@@ -80,6 +80,7 @@ class LLCtransformation:
         dsnew = make_array(ds, 3 * Nx,3 *  Ny)
         metrics = ['dxC', 'dyC', 'dxG', 'dyG']
 
+        dsnew = init_vars(ds, dsnew, varlist)
 
         for varName in varlist:
             vName = varName
@@ -88,10 +89,6 @@ class LLCtransformation:
                 dsnew[varName] = (dims._vars[::-1], ds[varName].data)
                 dsnew[varName].attrs = ds[varName].attrs
             else:
-                _shape = tuple([len(dsnew[var]) for var in tuple(dims)[::-1]])
-                dsnew[varName] = (dims._vars[::-1],
-                                  np.nan * np.zeros(_shape))
-                dsnew[varName].attrs = ds[varName].attrs
                 for k in range(len(faces)):
                     fac = 1
                     xslice = slice(psX[k][0], psX[k][1])
@@ -216,6 +213,10 @@ class LLCtransformation:
         R_dsnew = make_array(ds, tNy_rot, tNx_rot, Xr0)
 
         metrics = ['dxC', 'dyC', 'dxG', 'dyG']
+
+        NR_dsnew = init_vars(ds, NR_dsnew, varlist)
+        R_dsnew = init_vars(ds, R_dsnew, varlist)
+
         for varName in varlist:
             vName = varName
             fac = 1
@@ -226,13 +227,6 @@ class LLCtransformation:
                 NR_dsnew[varName].attrs = ds[varName].attrs
                 R_dsnew[varName].attrs = ds[varName].attrs
             else:
-                _shape = tuple([len(NR_dsnew[var]) for var in tuple(dims)[::-1]])
-                NR_dsnew[varName] = (dims._vars[::-1],
-                                     np.nan * np.zeros(_shape))
-                R_dsnew[varName] = (dims._vars[::-1],
-                                    np.nan * np.zeros(_shape))
-                NR_dsnew[varName].attrs = ds[varName].attrs
-                R_dsnew[varName].attrs = ds[varName].attrs
                 if len(dims.X) + len(dims.Y) == 4:  # vector fields
                     if 'mates' in list(ds[varName].attrs):
                         vName = ds[varName].attrs['mates']
@@ -306,6 +300,28 @@ def make_array(ds, tNx, tNy, X0=0):
     for dim in dsnew.dims:
         dsnew[dim].attrs = ds[dim].attrs
     return dsnew
+
+
+def init_vars(ds, DSNEW, varlist):
+    """ initializes dataarray within dataset"""
+    for varName in varlist:
+        dims = Dims([dim for dim in ds[varName].dims if dim != 'face'][::-1])
+        if len(dims)==2:
+            ncoords = {dims.X: DSNEW.coords[dims.X], 
+                       dims.Y: DSNEW.coords[dims.Y]}
+        elif len(dims)==3:
+            ncoords = {dims.X: DSNEW.coords[dims.X], 
+                       dims.Y: DSNEW.coords[dims.Y], 
+                       dims.Z: DSNEW.coords[dims.Z]}
+        elif len(dims)==4:
+            ncoords = {dims.X: DSNEW.coords[dims.X], 
+                       dims.Y: DSNEW.coords[dims.Y], 
+                       dims.Z: DSNEW.coords[dims.Z],
+                       dims.T: DSNEW.coords[dims.T]}
+        ds_new = xr.DataArray(np.nan, coords=ncoords, dims=dims._vars[::-1])
+        DSNEW[varName]  = ds_new
+        DSNEW[varName].attrs =  ds[varName].attrs
+    return DSNEW
 
 
 def pos_chunks(faces, arc_faces, chunksY, chunksX):

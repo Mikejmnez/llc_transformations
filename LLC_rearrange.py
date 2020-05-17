@@ -289,17 +289,17 @@ def make_array(ds, tNx, tNy, X0=0):
                        'Xp1':(('Xp1',), _np.arange(X0, X0+tNx), {'axis':'X'}),
                        'Y': (('Y',), _np.arange(tNy), {'axis': 'Y'}),
                        'Yp1': (('Yp1',), _np.arange(tNy), {'axis': 'Y'}),
-                       'Z': (('Z',), ds['Z'].data, {'axis': 'Z'}),
-                       'Zp1': (('Zp1',), ds['Zp1'].data, {'axis': 'Z'}),
-                       'Zl': (('Zl',), ds['Zl'].data, {'axis': 'Z'}),
-                       'time': (('time',), ds['time'].data, {'axis': 'T'}),
+                       'Z': (('Z',), _np.array(ds['Z'].data), {'axis': 'Z'}),
+                       'Zp1': (('Zp1',), _np.array(ds['Zp1'].data), {'axis': 'Z'}),
+                       'Zl': (('Zl',), _np.array(ds['Zl'].data), {'axis': 'Z'}),
+                       'time': (('time',), _np.array(ds['time'].data), {'axis': 'T'}),
                        }
     else:
         coords_nrot = {'X': (('X',), _np.arange(X0, X0 + tNx), {'axis': 'X'}),
                        'Xp1':(('Xp1',), _np.arange(X0, X0+tNx), {'axis':'X'}),
                        'Y': (('Y',), _np.arange(tNy), {'axis': 'Y'}),
                        'Yp1': (('Yp1',), _np.arange(tNy), {'axis': 'Y'}),
-                       'time': (('time',), ds['time'].data, {'axis': 'T'}),
+                       'time': (('time',), _np.array(ds['time'].data), {'axis': 'T'}),
                        }
 
     dsnew = _xr.Dataset(coords=coords_nrot)

@@ -256,9 +256,9 @@ class LLCtransformation:
                     yslc = slice(POSYa_rot[k][0], POSYa_rot[k][1])
                     arg = {dims.Y: yslc, dims.X: xslc}
                     data = ARCT[tk]
-                    if acrot_faces[k] == 7:
+                    if k == 0:
                         sort_arg = {'variables': ndims.X, 'ascending': False}
-                    elif acrot_faces[k] == 10:
+                    elif k == 1:
                         sort_arg = {'variables': dims.Y, 'ascending': False}
                     data = data.sortby(**sort_arg)
                     R_dsnew[varName].isel(**arg)[:] = data.values

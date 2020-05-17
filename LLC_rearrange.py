@@ -173,13 +173,8 @@ class LLCtransformation:
         acnrot_faces = [k for k in arc_faces if k in np.array([2, 5])]
         acrot_faces = [k for k in arc_faces if k in np.array([7, 10])]
 
-        nrot_A = [k for k in nrot_faces if k in np.arange(3)]
-        nrot_B = [k for k in nrot_faces if k in np.arange(3, 6)]
-        rot_A = [k for k in rot_faces if k in np.arange(7, 10)]
-        rot_B = [k for k in rot_faces if k in np.arange(10, 13)]
-
         tNy_nrot, tNx_nrot = chunk_sizes(nrot_faces, [Nx], [Ny])
-        tNx_rot, tNy_rot = chunk_sizes(rot_faces, [Nx], [Ny], rotated=True)
+        tNy_rot, tNx_rot = chunk_sizes(rot_faces, [Nx], [Ny], rotated=True)
 
         delNX = 0
         delNY = 0
@@ -187,30 +182,28 @@ class LLCtransformation:
             delNX = int(Nx / 2)
             delNY = int(Ny / 2)
         tNy_nrot = tNy_nrot + delNY
-        tNx_rot = tNx_rot + delNX
-        # Non-rotated faces
+        tNy_rot = tNy_rot + delNX
+
         Nx_nrot = np.arange(0, tNx_nrot + 1, Nx)
         Ny_nrot = np.arange(0, tNy_nrot + 1, Ny)
-        # rotated faces
-        Nx_rot = np.arange(delNX, tNx_rot + 1, Nx)
         Ny_rot = np.arange(0, tNy_rot + 1, Ny)
+        Nx_rot = np.arange(0, tNx_rot + 1, Nx)
 
         chunksX_nrot, chunksY_nrot = make_chunks(Nx_nrot, Ny_nrot)
         chunksX_rot, chunksY_rot = make_chunks(Nx_rot, Ny_rot)
 
         POSY_nrot, POSX_nrot, POSYarc_nrot, POSXarc_nrot = pos_chunks(nrot_faces, acnrot_faces,chunksY_nrot, chunksX_nrot)
-
         POSY_rot, POSX_rot, POSYa_rot, POSXa_rot = pos_chunks(rot_faces,acrot_faces, chunksY_rot, chunksX_rot)
 
         X0 = 0
         Xr0 = 0
         if centered == 'Atlantic':
-            X0 = tNy_rot
+            X0 = tNx_rot
         elif centered == 'Pacific':
             Xr0 = tNx_nrot
 
         NR_dsnew = make_array(ds, tNx_nrot, tNy_nrot, X0)
-        R_dsnew = make_array(ds, tNy_rot, tNx_rot, Xr0)
+        R_dsnew = make_array(ds, tNx_rot, tNy_rot, Xr0)
 
         metrics = ['dxC', 'dyC', 'dxG', 'dyG']
 
@@ -241,29 +234,33 @@ class LLCtransformation:
                     NR_dsnew[varName].isel(**arg)[:] = data
                 for k in range(len(rot_faces)):
                     kk = len(rot_faces) - (k + 1)
-                    xslice = slice(POSX_nrot[k][0], POSX_nrot[k][1])
-                    yslice = slice(POSY_nrot[kk][0], POSY_nrot[kk][1])
+                    xslice = slice(POSX_rot[k][0], POSX_rot[k][1])
+                    yslice = slice(POSY_rot[kk][0], POSY_rot[kk][1])
                     data = fac * ds[vName].isel(face=rot_faces[k])
                     arg = {dims.Y: yslice, dims.X: xslice}
-                    dtr = list(dims)[::-1]
-                    dtr[-1], dtr[-2] = dtr[-2], dtr[-1]
                     ndims = Dims(list(data.dims)[::-1])
+                    dtr = list(ndims)[::-1]
+                    dtr[-1], dtr[-2] = dtr[-2], dtr[-1]
                     sort_arg = {'variables': ndims.X, 'ascending': False}
-                    data = data.sortby(**sort_arg)
-                    R_dsnew[varName].isel(**arg).transpose(*dtr)[:] = data.values
+                    data = data.sortby(**sort_arg).transpose(*dtr)
+                    R_dsnew[varName].isel(**arg)[:] = data.values
                 for k in range(len(acnrot_faces)):
                     data = ARCT[k]
                     xslice = slice(POSXarc_nrot[k][0], POSXarc_nrot[k][1])
                     yslice = slice(POSYarc_nrot[k][0], POSYarc_nrot[k][1])
-                    data = ARCT[k]
                     arg = {dims.X: xslice, dims.Y: yslice}
                     NR_dsnew[varName].isel(**arg)[:] = data.values
                 for k in range(len(acrot_faces)):
                     tk = len(acnrot_faces) + k
-                    xslc = slice(POSXarc_nrot[k][0], POSXarc_nrot[k][1])
-                    yslc = slice(POSYarc_nrot[k][0], POSYarc_nrot[k][1])
+                    xslc = slice(POSXa_rot[k][0], POSXa_rot[k][1])
+                    yslc = slice(POSYa_rot[k][0], POSYa_rot[k][1])
                     arg = {dims.Y: yslc, dims.X: xslc}
                     data = ARCT[tk]
+                    if k == 0:
+                        sort_arg = {'variables': ndims.X, 'ascending': False}
+                    elif k == 1:
+                        sort_arg = {'variables': dims.Y, 'ascending': False}
+                    data = data.sortby(**sort_arg)
                     R_dsnew[varName].isel(**arg)[:] = data.values
 
         if centered == 'Atlantic':
@@ -315,21 +312,21 @@ def init_vars(ds, DSNEW, varlist):
     """ initializes dataarray within dataset"""
     for varName in varlist:
         dims = Dims([dim for dim in ds[varName].dims if dim != 'face'][::-1])
-        if len(dims)==2:
-            ncoords = {dims.X: DSNEW.coords[dims.X], 
+        if len(dims) == 2:
+            ncoords = {dims.X: DSNEW.coords[dims.X],
                        dims.Y: DSNEW.coords[dims.Y]}
-        elif len(dims)==3:
-            ncoords = {dims.X: DSNEW.coords[dims.X], 
-                       dims.Y: DSNEW.coords[dims.Y], 
+        elif len(dims) == 3:
+            ncoords = {dims.X: DSNEW.coords[dims.X],
+                       dims.Y: DSNEW.coords[dims.Y],
                        dims.Z: DSNEW.coords[dims.Z]}
-        elif len(dims)==4:
-            ncoords = {dims.X: DSNEW.coords[dims.X], 
-                       dims.Y: DSNEW.coords[dims.Y], 
+        elif len(dims) == 4:
+            ncoords = {dims.X: DSNEW.coords[dims.X],
+                       dims.Y: DSNEW.coords[dims.Y],
                        dims.Z: DSNEW.coords[dims.Z],
                        dims.T: DSNEW.coords[dims.T]}
         ds_new = xr.DataArray(np.nan, coords=ncoords, dims=dims._vars[::-1])
-        DSNEW[varName]  = ds_new
-        DSNEW[varName].attrs =  ds[varName].attrs
+        DSNEW[varName] = ds_new
+        DSNEW[varName].attrs = ds[varName].attrs
     return DSNEW
 
 
@@ -398,38 +395,38 @@ def pos_chunks(faces, arc_faces, chunksY, chunksX):
                 xk = 0
                 yk = 0
                 if ny_Apos == 1:
-                    xk = 0
+                    yk = 0
                 elif ny_Apos == 2:
                     if k == rot_A[0]:
-                        xk = 0
+                        yk = 0
                     else:
-                        xk = 1
+                        yk = 1
                 elif ny_Apos == 3:
                     if k == rotA[0]:
-                        xk = 0
+                        yk = 0
                     elif k == rotA[1]:
-                        xk = 1
+                        yk = 1
                     elif k == rotA[2]:
-                        xk = 2
+                        yk = 2
             elif k in rot_B:
                 if ny_Apos > 0:
-                    yk = 1
+                    xk = 1
                 else:
-                    yk = 0
-                if ny_Bpos == 1:
                     xk = 0
+                if ny_Bpos == 1:
+                    yk = 0
                 elif ny_Bpos == 2:
                     if k == rot_B[0]:
-                        xk = 0
+                        yk = 0
                     else:
-                        xk = 1
+                        yk = 1
                 elif ny_Bpos == 3:
                     if k == rotB[0]:
-                        xk = 0
+                        yk = 0
                     elif k == rotB[1]:
-                        xk = 1
+                        yk = 1
                     elif k == rotB[2]:
-                        xk = 2
+                        yk = 2
         else:
             print('face index not in LLC grid')
         POSY.append(chunksY[yk])
@@ -455,12 +452,15 @@ def pos_chunks(faces, arc_faces, chunksY, chunksX):
                     POSX_arc.append(chunksX[k])
                     POSY_arc.append([pos_r, int(pos_r + (pos_r - pos_l) / 2)])
     else:
+        pos_r = chunksY[-1][-1]
+        pos_l = chunksY[-1][0]
         if len(aface_rot) == 1:
-            POSY_arc.append(chunksY[0])
+            POSX_arc.append(chunksX[0])
+            POSY_arc.append([pos_r, int(pos_r + (pos_r - pos_l) / 2)])
         else:
             for k in range(len(aface_rot)):
-                POSY_arc.append(chunksY[k])
-        POSX_arc.append([0, chunksX[0][0]])
+                POSX_arc.append(chunksX[k])
+                POSY_arc.append([pos_r, int(pos_r + (pos_r - pos_l) / 2)])
     return POSY, POSX, POSY_arc, POSX_arc
 
 
@@ -681,9 +681,9 @@ def arct_connect(ds, varName, all_faces):
                                                        ds[dims.X] > len(ds[dims.Y]) - ds[dims.Y]))
                 da_arg = {'face': arc_cap, dims.X: xslice, dims.Y: yslice}
                 mask_arg = {dims.X: xslice, dims.Y: yslice}
-                sort_arg = {'variables': [dims.X], 'ascending': False}
+#                 sort_arg = {'variables': [dims.X], 'ascending': False}
                 arct = fac * ds[_varName].isel(**da_arg)
-                arct = arct.sortby(**sort_arg)
+#                 arct = arct.sortby(**sort_arg)
                 Mask = mask7.isel(**mask_arg)
                 arct = (arct * Mask).transpose(*dtr)
                 ARCT.append(arct)
@@ -707,7 +707,7 @@ def arct_connect(ds, varName, all_faces):
                     if _varName not in metrics:
                         fac = -1
                 da_arg = {'face': arc_cap, dims.X: xslice, dims.Y: yslice}
-                sort_arg = {'variables': [dims.X, dims.Y], 'ascending': False}
+                sort_arg = {'variables': [dims.X], 'ascending': False}
                 mask_arg = {dims.X: xslice, dims.Y: yslice}
                 arct = fac * ds[_varName].isel(**da_arg)
                 arct = arct.sortby(**sort_arg)

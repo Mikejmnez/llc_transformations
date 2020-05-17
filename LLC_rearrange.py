@@ -140,7 +140,6 @@ class LLCtransformation:
                             dsnew[varName].isel(**arg).transpose(*dtr)[:] = data.values
         return dsnew
 
-
     @classmethod
     def arctic_crown(
         self,
@@ -528,7 +527,7 @@ def chunk_sizes(faces, Nx, Ny, rotated=False):
                         iA = [np.where(faces[nk] == A_ref)[0][0] for nk in range(len(faces)) if faces[nk] in A_ref]
                         iB = [np.where(faces[nk] == B_ref)[0][0] for nk in range(len(faces)) if faces[nk] in B_ref] 
                         if iA == iB:
-                            tNy = len(A_list) * Ny_nrot[0]
+                            tNy = len(A_list) * Ny[0]
                         else:
                             print('error, not all faces connect equally')
                             tNy = 0
@@ -554,12 +553,9 @@ def face_connect(ds, all_faces):
     Nx_rot = []
     Ny_rot = []
 
-    transpose = np.arange(7,13)
+    transpose = np.arange(7, 13)
     nrot_faces = []
     rot_faces = []
-
-    xpos = 0
-    ypos = 0
 
     for k in [ii for ii in all_faces if ii not in [arc_cap]]:
         if k in transpose:

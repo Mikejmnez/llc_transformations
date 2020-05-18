@@ -1,5 +1,5 @@
-import numpy as _np
-import xarray as _xr
+import numpy as np
+import xarray as xr
 from set_dims import Dims
 
 
@@ -34,7 +34,7 @@ class LLCtransformation:
         Ny = len(ds['Y'])
 
         if isinstance(faces, str):
-            faces = _np.array([2, 5, 6, 7, 10])
+            faces = np.array([2, 5, 6, 7, 10])
 
         if isinstance(varlist, str):
             if varlist == 'all':
@@ -42,8 +42,8 @@ class LLCtransformation:
             else:
                 varlist = [varlist]
 
-        tNx = _np.arange(0, 3 * Nx + 1, Nx)
-        tNy = _np.arange(0, 3 * Ny + 1, Ny)
+        tNx = np.arange(0, 3 * Nx + 1, Nx)
+        tNy = np.arange(0, 3 * Ny + 1, Ny)
 
         chunksX, chunksY = make_chunks(tNx, tNy)
         # Set ordered position wrt array layout, in accordance to location
@@ -51,25 +51,31 @@ class LLCtransformation:
         if centered == 'Atlantic':
             ix = [1, 2, 1, 1, 0]
             jy = [0, 1, 1, 2, 1]
-            nrot = _np.array([2])
-            Arot = _np.array([5, 6, 7])
-            Brot = _np.array([10])
-            Crot = _np.array([0])
-
+            # shifts at u- and v-points
+            xs = [[-1, -1], [-1, -1], [-1, -1], [-1, -1], [0, -1]]
+            ys = [[0, -1], [-1, -1], [-1, -1], [-1, -1], [-1, -1]]
+            nrot = np.array([2])
+            Arot = np.array([5, 6, 7])
+            Brot = np.array([10])
+            Crot = np.array([0])
         elif centered == 'Pacific':
             ix = [1, 0, 1, 1, 2]
             jy = [2, 1, 1, 0, 1]
-            nrot = _np.array([10])
-            Arot = _np.array([])
-            Brot = _np.array([2])
-            Crot = _np.array([5, 6, 7])
+            xs = [[-1, -1], [0, -1], [-1, -1], [-1, -1], [-1, -1]]
+            ys = [[-1, -1], [-1, -1], [-1, -1], [0, -1], [-1, -1]]
+            nrot = np.array([10])
+            Arot = np.array([])
+            Brot = np.array([2])
+            Crot = np.array([5, 6, 7])
         elif centered == 'Arctic':
             ix = [0, 1, 1, 2, 1]
             jy = [1, 0, 1, 1, 2]
-            nrot = _np.array([6, 5, 7])
-            Arot = _np.array([10])
-            Brot = _np.array([])
-            Crot = _np.array([2])
+            xs = [[0, -1], [-1, -1], [-1, -1], [-1, -1], [-1, -1]]
+            ys = [[-1, -1], [0, -1], [-1, -1], [-1, -1], [-1, -1]]
+            nrot = np.array([6, 5, 7])
+            Arot = np.array([10])
+            Brot = np.array([])
+            Crot = np.array([2])
         else:
             print('raise error: Centering not supported')
         psX = []
@@ -92,11 +98,29 @@ class LLCtransformation:
             else:
                 for k in range(len(faces)):
                     fac = 1
-                    xslice = slice(psX[k][0], psX[k][1])
-                    yslice = slice(psY[k][0], psY[k][1])
+                    if dims.X == 'Xp1':  # xshift
+                        xslice = slice(psX[k][0] + xs[k][0],
+                                       psX[k][1] + xs[k][1])
+                    else:
+                        xslice = slice(psX[k][0], psX[k][1])
+                    if dims.Y == 'Yp1':  # yshift
+                        yslice = slice(psY[k][0] + ys[k][0],
+                                       psY[k][1] + ys[k][1])
+                    else:
+                        yslice = slice(psY[k][0], psY[k][1])
                     arg = {dims.X: xslice, dims.Y: yslice}
                     data = ds[varName].isel(face=faces[k])
                     if faces[k] in nrot:
+                        if len(dims.Y) == 3 and faces[k] == 5:
+                            narg = {dims.Y: slice(0, -1)}
+                            data = data.isel(narg)
+                        if len(dims.Y) == 3 and faces[k] == 2:
+                            narg = {dims.Y: slice(0, -1)}
+                            data = data.isel(narg)
+                        if len(dims.X) + len(dims.Y) == 6:
+                            if centered == 'Arctic' and faces[k] == 2:
+                                narg = {dims.Y: slice(0, -1)}
+                                data = data.isel(narg)
                         dsnew[varName].isel(**arg)[:] = data.values
                     else:
                         dtr = list(dims)[::-1]
@@ -108,12 +132,32 @@ class LLCtransformation:
                                 if 'mates' in list(ds[varName].attrs):
                                     vName = ds[varName].attrs['mates']
                                     data = ds[vName].isel(face=faces[k])
-                                    if len(dims.Y) == 3 and vName not in metrics:
-                                        fac = -1
+                                    if len(dims.Y) == 3:
+                                        if vName not in metrics:
+                                            fac = -1
                                 _DIMS = [dim for dim in ds[vName].dims if dim != 'face']
                                 _dims = Dims(_DIMS[::-1])
+                                if len(_dims.Y) == 3 and faces[k] == 2:
+                                    narg = {_dims.Y: slice(0, -1)}
+                                    data = data.isel(narg)
+                                elif len(dims.X) == 3 and faces[k] == 5:
+                                    narg = {_dims.Y: slice(0, -1)}
+                                    data = data.isel(narg)
+                                elif len(dims.Y) == 3 and faces[k] == 7:
+                                    narg = {_dims.X: slice(0, -1)}
+                                    data = data.isel(narg)
                                 sort_arg = {'variables': _dims.X,
                                             'ascending': False}
+                            if len(dims.X) + len(dims.Y) == 6:
+                                if centered == 'Pacific' and faces[k] == 5:
+                                    narg = {dims.Y: slice(0, -1)}
+                                    data = data.isel(narg)
+                                if centered == 'Pacific' and faces[k] == 7:
+                                    narg = {dims.X: slice(0, -1)}
+                                    data = data.isel(narg)
+                                if centered == 'Arctic' and faces[k] == 2:
+                                    narg = {dims.Y: slice(0, -1)}
+                                    data = data.isel(narg)
                         elif faces[k] in Arot:
                             sort_arg = {'variables': dims.Y,
                                         'ascending': False}
@@ -127,12 +171,23 @@ class LLCtransformation:
                                 _dims = Dims(_DIMS[::-1])
                                 sort_arg = {'variables': _dims.Y,
                                             'ascending': False}
+                            if len(dims.X) + len(dims.Y) == 6:
+                                if centered == 'Atlantic' and faces[k] == 2:
+                                    narg = {dims.Y: slice(1, -1)}
+                                    data = data.isel(narg)
                         elif faces[k] in Brot:
                             sort_arg = {'variables': [dims.X, dims.Y],
                                         'ascending': False}
                             if len(dims.X) + len(dims.Y) == 4:
                                 if vName not in metrics:
                                     fac = -1
+                                if len(dims.X) == 3 and faces[k] == 10:
+                                    narg = {dims.X: slice(0, -1)}
+                                    data = data.isel(narg)
+                            if len(dims.X) + len(dims.Y) == 6:
+                                if centered == 'Atlantic' and faces[k] == 10:
+                                    narg = {dims.X: slice(0, -1)}
+                                    data = data.isel(narg)
                         data = fac * data.sortby(**sort_arg)
                         if faces[k] in Brot:
                             dsnew[varName].isel(**arg)[:] = data.values
@@ -154,7 +209,7 @@ class LLCtransformation:
         Ny = len(ds['Y'])
 
         if isinstance(faces, str):
-            faces = _np.arange(13)
+            faces = np.arange(13)
 
         nrot_faces, Nx_nrot, Ny_nrot, rot_faces, Nx_rot, Ny_rot = face_connect(ds, faces)
 
@@ -170,8 +225,8 @@ class LLCtransformation:
 
         arc_faces, Nx_ac_nrot, Ny_ac_nrot, Nx_ac_rot, Ny_ac_rot, ARCT = arct_connect(ds, varName, faces)
 
-        acnrot_faces = [k for k in arc_faces if k in _np.array([2, 5])]
-        acrot_faces = [k for k in arc_faces if k in _np.array([7, 10])]
+        acnrot_faces = [k for k in arc_faces if k in np.array([2, 5])]
+        acrot_faces = [k for k in arc_faces if k in np.array([7, 10])]
 
         tNy_nrot, tNx_nrot = chunk_sizes(nrot_faces, [Nx], [Ny])
         tNy_rot, tNx_rot = chunk_sizes(rot_faces, [Nx], [Ny], rotated=True)
@@ -184,11 +239,11 @@ class LLCtransformation:
         tNy_nrot = tNy_nrot + delNY
         tNy_rot = tNy_rot + delNX
 
-        Nx_nrot = _np.arange(0, tNx_nrot + 1, Nx)
-        Ny_nrot = _np.arange(0, tNy_nrot + 1, Ny)
-        Ny_rot = _np.arange(0, tNy_rot + 1, Ny)
-        Nx_rot = _np.arange(0, tNx_rot + 1, Nx)
-
+        Nx_nrot = np.arange(0, tNx_nrot + 1, Nx)
+        Ny_nrot = np.arange(0, tNy_nrot + 1, Ny)
+        Ny_rot = np.arange(0, tNy_rot + 1, Ny)
+        Nx_rot = np.arange(0, tNx_rot + 1, Nx)
+        
         chunksX_nrot, chunksY_nrot = make_chunks(Nx_nrot, Ny_nrot)
         chunksX_rot, chunksY_rot = make_chunks(Nx_rot, Ny_rot)
 
@@ -213,6 +268,7 @@ class LLCtransformation:
         for varName in varlist:
             vName = varName
             fac = 1
+            ys = 0
             dims = Dims([dim for dim in ds[varName].dims if dim != 'face'][::-1])
             if len(ds[varName].dims) == 1:
                 R_dsnew[varName] = (dims._vars[::-1], ds[varName].data)
@@ -235,7 +291,10 @@ class LLCtransformation:
                 for k in range(len(rot_faces)):
                     kk = len(rot_faces) - (k + 1)
                     xslice = slice(POSX_rot[k][0], POSX_rot[k][1])
-                    yslice = slice(POSY_rot[kk][0], POSY_rot[kk][1])
+                    if dims.Y == 'Yp1':
+                        yslice = slice(POSY_rot[kk][0]+1, POSY_rot[kk][1]+1)
+                    else:
+                        yslice = slice(POSY_rot[kk][0], POSY_rot[kk][1])
                     data = fac * ds[vName].isel(face=rot_faces[k])
                     arg = {dims.Y: yslice, dims.X: xslice}
                     ndims = Dims(list(data.dims)[::-1])
@@ -256,12 +315,13 @@ class LLCtransformation:
                     yslc = slice(POSYa_rot[k][0], POSYa_rot[k][1])
                     arg = {dims.Y: yslc, dims.X: xslc}
                     data = ARCT[tk]
-                    if acrot_faces[k] == 7:
-                        sort_arg = {'variables': ndims.X, 'ascending': False}
-                    elif acrot_faces[k] == 10:
-                        sort_arg = {'variables': dims.Y, 'ascending': False}
+                    if acrot_faces[k]==7:
+                        sort_arg = {'variables': ndims.X, 'ascending':False}
+                    elif acrot_faces[k]==10:
+                        sort_arg = {'variables': dims.Y, 'ascending':False}
                     data = data.sortby(**sort_arg)
                     R_dsnew[varName].isel(**arg)[:] = data.values
+            
 
         if centered == 'Atlantic':
             DS = R_dsnew.combine_first(NR_dsnew)
@@ -285,24 +345,24 @@ def make_chunks(Nx, Ny):
 
 def make_array(ds, tNx, tNy, X0=0):
     if 'Z' in ds.coords:
-        coords_nrot = {'X': (('X',), _np.arange(X0, X0 + tNx), {'axis': 'X'}),
-                       'Xp1':(('Xp1',), _np.arange(X0, X0+tNx), {'axis':'X'}),
-                       'Y': (('Y',), _np.arange(tNy), {'axis': 'Y'}),
-                       'Yp1': (('Yp1',), _np.arange(tNy), {'axis': 'Y'}),
-                       'Z': (('Z',), _np.array(ds['Z'].data), {'axis': 'Z'}),
-                       'Zp1': (('Zp1',), _np.array(ds['Zp1'].data), {'axis': 'Z'}),
-                       'Zl': (('Zl',), _np.array(ds['Zl'].data), {'axis': 'Z'}),
-                       'time': (('time',), _np.array(ds['time'].data), {'axis': 'T'}),
+        coords_nrot = {'X': (('X',), np.arange(X0, X0 + tNx), {'axis': 'X'}),
+                       'Xp1':(('Xp1',), np.arange(X0, X0 + tNx), {'axis':'X'}),
+                       'Y': (('Y',), np.arange(tNy), {'axis': 'Y'}),
+                       'Yp1': (('Yp1',), np.arange(tNy), {'axis': 'Y'}),
+                       'Z': (('Z',), ds['Z'].data, {'axis': 'Z'}),
+                       'Zp1': (('Zp1',), ds['Zp1'].data, {'axis': 'Z'}),
+                       'Zl': (('Zl',), ds['Zl'].data, {'axis': 'Z'}),
+                       'time': (('time',), ds['time'].data, {'axis': 'T'}),
                        }
     else:
-        coords_nrot = {'X': (('X',), _np.arange(X0, X0 + tNx), {'axis': 'X'}),
-                       'Xp1':(('Xp1',), _np.arange(X0, X0+tNx), {'axis':'X'}),
-                       'Y': (('Y',), _np.arange(tNy), {'axis': 'Y'}),
-                       'Yp1': (('Yp1',), _np.arange(tNy), {'axis': 'Y'}),
-                       'time': (('time',), _np.array(ds['time'].data), {'axis': 'T'}),
+        coords_nrot = {'X': (('X',), np.arange(X0, X0 + tNx), {'axis': 'X'}),
+                       'Xp1':(('Xp1',), np.arange(X0, X0 + tNx), {'axis':'X'}),
+                       'Y': (('Y',), np.arange(tNy), {'axis': 'Y'}),
+                       'Yp1': (('Yp1',), np.arange(tNy), {'axis': 'Y'}),
+                       'time': (('time',), ds['time'].data, {'axis': 'T'}),
                        }
 
-    dsnew = _xr.Dataset(coords=coords_nrot)
+    dsnew = xr.Dataset(coords=coords_nrot)
     for dim in dsnew.dims:
         dsnew[dim].attrs = ds[dim].attrs
     return dsnew
@@ -312,21 +372,21 @@ def init_vars(ds, DSNEW, varlist):
     """ initializes dataarray within dataset"""
     for varName in varlist:
         dims = Dims([dim for dim in ds[varName].dims if dim != 'face'][::-1])
-        if len(dims) == 2:
-            ncoords = {dims.X: DSNEW.coords[dims.X],
+        if len(dims)==2:
+            ncoords = {dims.X: DSNEW.coords[dims.X], 
                        dims.Y: DSNEW.coords[dims.Y]}
-        elif len(dims) == 3:
-            ncoords = {dims.X: DSNEW.coords[dims.X],
-                       dims.Y: DSNEW.coords[dims.Y],
+        elif len(dims)==3:
+            ncoords = {dims.X: DSNEW.coords[dims.X], 
+                       dims.Y: DSNEW.coords[dims.Y], 
                        dims.Z: DSNEW.coords[dims.Z]}
-        elif len(dims) == 4:
-            ncoords = {dims.X: DSNEW.coords[dims.X],
-                       dims.Y: DSNEW.coords[dims.Y],
+        elif len(dims)==4:
+            ncoords = {dims.X: DSNEW.coords[dims.X], 
+                       dims.Y: DSNEW.coords[dims.Y], 
                        dims.Z: DSNEW.coords[dims.Z],
                        dims.T: DSNEW.coords[dims.T]}
-        ds_new = _xr.DataArray(_np.nan, coords=ncoords, dims=dims._vars[::-1])
-        DSNEW[varName] = ds_new
-        DSNEW[varName].attrs = ds[varName].attrs
+        ds_new = xr.DataArray(np.nan, coords=ncoords, dims=dims._vars[::-1])
+        DSNEW[varName]  = ds_new
+        DSNEW[varName].attrs =  ds[varName].attrs
     return DSNEW
 
 
@@ -470,11 +530,11 @@ def chunk_sizes(faces, Nx, Ny, rotated=False):
     non-rotated faces
     '''
     if rotated is False:
-        A_ref = _np.array([k for k in range(3)])
-        B_ref = _np.array([k for k in range(3, 6)])
+        A_ref = np.array([k for k in range(3)])
+        B_ref = np.array([k for k in range(3, 6)])
     elif rotated is True:
-        A_ref = _np.array([k for k in range(7, 10)])
-        B_ref = _np.array([k for k in range(10, 13)])
+        A_ref = np.array([k for k in range(7, 10)])
+        B_ref = np.array([k for k in range(10, 13)])
 
     A_list = [k for k in faces if k in A_ref]
     B_list = [k for k in faces if k in B_ref]
@@ -512,8 +572,8 @@ def chunk_sizes(faces, Nx, Ny, rotated=False):
             tNx = 2 * Nx[0]
             if len(B_list) == len(A_list):
                 if len(A_list) == 1:
-                    iA = [_np.where(faces[nk] == A_ref)[0][0] for nk in range(len(faces)) if faces[nk] in A_ref]
-                    iB = [_np.where(faces[nk] == B_ref)[0][0] for nk in range(len(faces)) if faces[nk] in B_ref] 
+                    iA = [np.where(faces[nk] == A_ref)[0][0] for nk in range(len(faces)) if faces[nk] in A_ref]
+                    iB = [np.where(faces[nk] == B_ref)[0][0] for nk in range(len(faces)) if faces[nk] in B_ref] 
                     if iA == iB:
                         tNy = Ny[0]
                     else:
@@ -524,8 +584,8 @@ def chunk_sizes(faces, Nx, Ny, rotated=False):
                         print('Error, faces do not connect within facet')
                         tNy = 0
                     else:
-                        iA = [_np.where(faces[nk] == A_ref)[0][0] for nk in range(len(faces)) if faces[nk] in A_ref]
-                        iB = [_np.where(faces[nk] == B_ref)[0][0] for nk in range(len(faces)) if faces[nk] in B_ref] 
+                        iA = [np.where(faces[nk] == A_ref)[0][0] for nk in range(len(faces)) if faces[nk] in A_ref]
+                        iB = [np.where(faces[nk] == B_ref)[0][0] for nk in range(len(faces)) if faces[nk] in B_ref] 
                         if iA == iB:
                             tNy = len(A_list) * Ny[0]
                         else:
@@ -553,7 +613,7 @@ def face_connect(ds, all_faces):
     Nx_rot = []
     Ny_rot = []
 
-    transpose = _np.arange(7, 13)
+    transpose = np.arange(7, 13)
     nrot_faces = []
     rot_faces = []
 
@@ -593,10 +653,10 @@ def arct_connect(ds, varName, all_faces):
                 dims = Dims(DIMS[::-1])
                 dtr = list(dims)[::-1]
                 dtr[-1], dtr[-2] = dtr[-2], dtr[-1]
-                mask2 = _xr.ones_like(ds[_varName].isel(face=arc_cap))
+                mask2 = xr.ones_like(ds[_varName].isel(face=arc_cap))
                 # TODO: Eval where, define argument outside
-                mask2 = mask2.where(_np.logical_and(ds[dims.X] < ds[dims.Y],
-                                                    ds[dims.X] < len(ds[dims.Y]) - ds[dims.Y]))
+                mask2 = mask2.where(np.logical_and(ds[dims.X] < ds[dims.Y],
+                                                   ds[dims.X] < len(ds[dims.Y]) - ds[dims.Y]))
                 x0, xf = 0, int(len(ds[dims.Y]) / 2)  # TODO: CHECK here!
                 y0, yf = 0, int(len(ds[dims.X]))
                 xslice = slice(x0, xf)
@@ -615,9 +675,9 @@ def arct_connect(ds, varName, all_faces):
                     dims = Dims(_DIMS[::-1])
                     dtr = list(dims)[::-1]
                     dtr[-1], dtr[-2] = dtr[-2], dtr[-1]
-                    mask2 = _xr.ones_like(ds[_varName].isel(face=arc_cap))
-                    mask2 = mask2.where(_np.logical_and(ds[dims.X]< ds[dims.Y],
-                                                        ds[dims.X] < len(ds[dims.Y]) - ds[dims.Y]))
+                    mask2 = xr.ones_like(ds[_varName].isel(face=arc_cap))
+                    mask2 = mask2.where(np.logical_and(ds[dims.X] < ds[dims.Y],
+                                                       ds[dims.X] < len(ds[dims.Y]) - ds[dims.Y]))
                     da_arg = {'face': arc_cap, dims.X: xslice, dims.Y: yslice}
                     sort_arg = {'variables': dims.Y, 'ascending': False}
                     mask_arg = {dims.X: xslice, dims.Y: yslice}
@@ -634,9 +694,9 @@ def arct_connect(ds, varName, all_faces):
                 _varName = varName
                 DIMS = [dim for dim in ds[_varName].dims if dim != 'face']
                 dims = Dims(DIMS[::-1])
-                mask5 = _xr.ones_like(ds[_varName].isel(face=arc_cap))
-                mask5 = mask5.where(_np.logical_and(ds[dims.X] > ds[dims.Y],
-                                                    ds[dims.X] < len(ds[dims.Y]) - ds[dims.Y]))
+                mask5 = xr.ones_like(ds[_varName].isel(face=arc_cap))
+                mask5 = mask5.where(np.logical_and(ds[dims.X] > ds[dims.Y],
+                                                   ds[dims.X] < len(ds[dims.Y]) - ds[dims.Y]))
                 x0, xf = 0, int(len(ds[dims.X]))
                 y0, yf = 0, int(len(ds[dims.Y]) / 2)
                 xslice = slice(x0, xf)
@@ -658,9 +718,9 @@ def arct_connect(ds, varName, all_faces):
                 dims = Dims(DIMS[::-1])
                 dtr = list(dims)[::-1]
                 dtr[-1], dtr[-2] = dtr[-2], dtr[-1]
-                mask7 = _xr.ones_like(ds[_varName].isel(face=arc_cap))
-                mask7 = mask7.where(_np.logical_and(ds[dims.X] > ds[dims.Y],
-                                                    ds[dims.X] > len(ds[dims.Y]) - ds[dims.Y]))
+                mask7 = xr.ones_like(ds[_varName].isel(face=arc_cap))
+                mask7 = mask7.where(np.logical_and(ds[dims.X] > ds[dims.Y],
+                                                   ds[dims.X] > len(ds[dims.Y]) - ds[dims.Y]))
                 x0, xf = int(len(ds[dims.Y]) / 2), int(len(ds[dims.Y]))
                 y0, yf = 0, int(len(ds[dims.X]))
                 xslice = slice(x0, xf)
@@ -676,9 +736,9 @@ def arct_connect(ds, varName, all_faces):
                     dims = Dims(DIMS[::-1])
                     dtr = list(dims)[::-1]
                     dtr[-1], dtr[-2] = dtr[-2], dtr[-1]
-                    mask7 = _xr.ones_like(ds[_varName].isel(face=arc_cap))
-                    mask7 = mask7.where(_np.logical_and(ds[dims.X]> ds[dims.Y],
-                                                        ds[dims.X] > len(ds[dims.Y]) - ds[dims.Y]))
+                    mask7 = xr.ones_like(ds[_varName].isel(face=arc_cap))
+                    mask7 = mask7.where(np.logical_and(ds[dims.X] > ds[dims.Y],
+                                                       ds[dims.X] > len(ds[dims.Y]) - ds[dims.Y]))
                 da_arg = {'face': arc_cap, dims.X: xslice, dims.Y: yslice}
                 mask_arg = {dims.X: xslice, dims.Y: yslice}
 #                 sort_arg = {'variables': [dims.X], 'ascending': False}
@@ -694,9 +754,9 @@ def arct_connect(ds, varName, all_faces):
                 DIMS = [dim for dim in ds[_varName].dims if dim != 'face']
                 dims = Dims(DIMS[::-1])
                 arc_faces.append(k)
-                mask10 = _xr.ones_like(ds[_varName].isel(face=arc_cap))
-                mask10 = mask10.where(_np.logical_and(ds[dims.X] < ds[dims.Y],
-                                                      ds[dims.X] > len(ds[dims.Y]) - ds[dims.Y]))
+                mask10 = xr.ones_like(ds[_varName].isel(face=arc_cap))
+                mask10 = mask10.where(np.logical_and(ds[dims.X] < ds[dims.Y],
+                                                     ds[dims.X] > len(ds[dims.Y]) - ds[dims.Y]))
                 x0, xf = 0, int(len(ds[dims.X]))
                 y0, yf = int(len(ds[dims.Y]) / 2), int(len(ds[dims.Y]))
                 xslice = slice(x0, xf)

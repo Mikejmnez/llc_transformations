@@ -1,6 +1,6 @@
 import numpy as _np
 import xarray as _xr
-from set_dims import Dims
+import reprlib
 
 
 class LLCtransformation:
@@ -92,7 +92,8 @@ class LLCtransformation:
 
         for varName in varlist:
             vName = varName
-            dims = Dims([dim for dim in ds[varName].dims if dim != 'face'][::-1])
+            DIM = [dim for dim in ds[varName].dims if dim != 'face'][::-1]
+            dims = Dims(DIM)
             if len(ds[varName].dims) == 1:
                 dsnew[varName] = (dims._vars[::-1], ds[varName].data)
                 dsnew[varName].attrs = ds[varName].attrs
@@ -166,8 +167,9 @@ class LLCtransformation:
                                 if 'mates' in list(ds[varName].attrs):
                                     vName = ds[varName].attrs['mates']
                                     data = ds[vName].isel(face=faces[k])
-                                    if len(dims.X) == 3 and vName not in metrics:
-                                        fac = -1
+                                    if len(dims.X) == 3:
+                                        if vName not in metrics:
+                                            fac = -1
                                 _DIMS = [dim for dim in ds[vName].dims if dim != 'face']
                                 _dims = Dims(_DIMS[::-1])
                                 sort_arg = {'variables': _dims.Y,
@@ -204,7 +206,9 @@ class LLCtransformation:
         centered,
         faces='all',
     ):
-        """ Transforms the dataset in which faces appears as a dimension into one with faces, with grids and variables sharing a common grid orientation.
+        """ Transforms the dataset in which faces appears as a dimension into
+        one with faces, with grids and variables sharing a common grid
+        orientation.
         """
         Nx = len(ds['X'])
         Ny = len(ds['Y'])
@@ -248,8 +252,8 @@ class LLCtransformation:
         chunksX_nrot, chunksY_nrot = make_chunks(Nx_nrot, Ny_nrot)
         chunksX_rot, chunksY_rot = make_chunks(Nx_rot, Ny_rot)
 
-        POSY_nrot, POSX_nrot, POSYarc_nrot, POSXarc_nrot = pos_chunks(nrot_faces, acnrot_faces,chunksY_nrot, chunksX_nrot)
-        POSY_rot, POSX_rot, POSYa_rot, POSXa_rot = pos_chunks(rot_faces,acrot_faces, chunksY_rot, chunksX_rot)
+        POSY_nrot, POSX_nrot, POSYarc_nrot, POSXarc_nrot = pos_chunks(nrot_faces, acnrot_faces, chunksY_nrot, chunksX_nrot)
+        POSY_rot, POSX_rot, POSYa_rot, POSXa_rot = pos_chunks(rot_faces, acrot_faces, chunksY_rot, chunksX_rot)
 
         X0 = 0
         Xr0 = 0
@@ -269,7 +273,8 @@ class LLCtransformation:
         for varName in varlist:
             vName = varName
             fac = 1
-            dims = Dims([dim for dim in ds[varName].dims if dim != 'face'][::-1])
+            DIM = [dim for dim in ds[varName].dims if dim != 'face'][::-1]
+            dims = Dims(DIM)
             if len(ds[varName].dims) == 1:
                 R_dsnew[varName] = (dims._vars[::-1], ds[varName].data)
                 NR_dsnew[varName] = (dims._vars[::-1], ds[varName].data)
@@ -292,7 +297,7 @@ class LLCtransformation:
                     kk = len(rot_faces) - (k + 1)
                     xslice = slice(POSX_rot[k][0], POSX_rot[k][1])
                     if dims.Y == 'Yp1':
-                        yslice = slice(POSY_rot[kk][0]+1, POSY_rot[kk][1]+1)
+                        yslice = slice(POSY_rot[kk][0] + 1, POSY_rot[kk][1] + 1)
                     else:
                         yslice = slice(POSY_rot[kk][0], POSY_rot[kk][1])
                     data = fac * ds[vName].isel(face=rot_faces[k])
@@ -344,24 +349,24 @@ def make_chunks(Nx, Ny):
 
 def make_array(ds, tNx, tNy, X0=0):
     if 'Z' in ds.coords:
-        coords_nrot = {'X': (('X',), _np.arange(X0, X0 + tNx), {'axis': 'X'}),
-                       'Xp1':(('Xp1',), _np.arange(X0, X0 + tNx),{'axis':'X'}),
-                       'Y': (('Y',), _np.arange(tNy), {'axis': 'Y'}),
-                       'Yp1': (('Yp1',), _np.arange(tNy), {'axis': 'Y'}),
-                       'Z': (('Z',), _np.array(ds['Z'].data), {'axis': 'Z'}),
-                       'Zp1':(('Zp1',),_np.array(ds['Zp1'].data),{'axis':'Z'}),
-                       'Zl': (('Zl',), _np.array(ds['Zl'].data),{'axis': 'Z'}),
-                       'time':(('time',),_np.array(ds['time'].data),{'axis':'T'}),
-                       }
+        crds = {'X': (('X',), _np.arange(X0, X0 + tNx), {'axis': 'X'}),
+                'Xp1': (('Xp1',), _np.arange(X0, X0 + tNx), {'axis': 'X'}),
+                'Y': (('Y',), _np.arange(tNy), {'axis': 'Y'}),
+                'Yp1': (('Yp1',), _np.arange(tNy), {'axis': 'Y'}),
+                'Z': (('Z',), _np.array(ds['Z'].data), {'axis': 'Z'}),
+                'Zp1': (('Zp1',), _np.array(ds['Zp1'].data), {'axis': 'Z'}),
+                'Zl': (('Zl',), _np.array(ds['Zl'].data), {'axis': 'Z'}),
+                'time': (('time',), _np.array(ds['time'].data), {'axis': 'T'}),
+                }
     else:
-        coords_nrot = {'X': (('X',), _np.arange(X0, X0 + tNx), {'axis': 'X'}),
-                       'Xp1':(('Xp1',),_np.arange(X0, X0 + tNx), {'axis':'X'}),
-                       'Y': (('Y',), _np.arange(tNy), {'axis': 'Y'}),
-                       'Yp1': (('Yp1',), _np.arange(tNy), {'axis': 'Y'}),
-                       'time': (('time',), _np.array(ds['time'].data), {'axis': 'T'}),
-                       }
+        crds = {'X': (('X',), _np.arange(X0, X0 + tNx), {'axis': 'X'}),
+                'Xp1': (('Xp1',), _np.arange(X0, X0 + tNx), {'axis': 'X'}),
+                'Y': (('Y',), _np.arange(tNy), {'axis': 'Y'}),
+                'Yp1': (('Yp1',), _np.arange(tNy), {'axis': 'Y'}),
+                'time': (('time',), _np.array(ds['time'].data), {'axis': 'T'}),
+                }
 
-    dsnew = _xr.Dataset(coords=coords_nrot)
+    dsnew = _xr.Dataset(coords=crds)
     for dim in dsnew.dims:
         dsnew[dim].attrs = ds[dim].attrs
     return dsnew
@@ -545,7 +550,8 @@ def chunk_sizes(faces, Nx, Ny, rotated=False):
                 tNy = Ny[0]
             elif len(B_list) == 2:
                 if min(B_list) == B_ref[0] and max(B_list) == B_ref[-1]:
-                    print('error, these faces do not connect. Not possible to create a single dataset that minimizes nans')
+                    print("error, these faces do not connect. Not possible to"
+                          "create a single dataset that minimizes nans")
                 else:
                     tNy = len(B_list) * Ny[0]
             else:
@@ -561,7 +567,8 @@ def chunk_sizes(faces, Nx, Ny, rotated=False):
                 tNy = Ny[0]
             elif len(A_list) == 2:
                 if min(A_list) == A_ref[0] and max(A_list) == A_ref[-1]:
-                    print('error, these faces do not connect. Not possible to create a single datase that minimizes nans')
+                    print("error, these faces do not connect. Not possible to"
+                          "create a single datase that minimizes nans")
                     tNy = 0
                 else:
                     tNy = len(A_list) * Ny[0]
@@ -594,7 +601,8 @@ def chunk_sizes(faces, Nx, Ny, rotated=False):
                     tNy = len(A_list) * Ny[0]
             else:
                 tNy = 0
-                print('Number of faces in facet A is not equal to the number of faces in facet B.')
+                print("Number of faces in facet A is not equal to the number"
+                      "of faces in facet B.")
     return tNy, tNx
 
 
@@ -774,3 +782,49 @@ def arct_connect(ds, varName, all_faces):
                 ARCT.append(arct)
 
     return arc_faces, Nx_ac_nrot, Ny_ac_nrot, Nx_ac_rot, Ny_ac_rot, ARCT
+
+
+class Dims:
+    axes = 'XYZT'  # shortcut axis names
+
+    def __init__(self, vars):
+        self._vars = tuple(vars)
+
+    def __iter__(self):
+        return iter(self._vars)
+
+    def __repr__(self):
+        vars = reprlib.repr(self._vars)
+        return '{}'.format(vars)
+
+    def __str__(self):
+        return str(tuple(self))
+
+    def __eq__(self, other):
+        return tuple(self) == tuple(other)
+
+    def __len__(self):
+        return len(self._vars)
+
+    def __getattr__(self, name):
+        cls = type(self)
+        if len(name) == 1:
+            pos = cls.axes.find(name)
+            if 0 <= pos < len(self._vars):
+                return self._vars[pos]
+        msg = '{.__name__!r} object has not attribute {!r}'
+        raise AttributeError(msg.format(cls, name))
+
+    def __setattr__(self, name, value):
+        cls = type(self)
+        if len(name) == 1:
+            if name in cls.axes:
+                error = 'read-only attribute {attr_name!r}'
+            elif name.islower():
+                error = 'can`t set attributes `a` to `z` in {cls_name!r}'
+            else:
+                error = ''
+            if error:
+                msg = error.format(cls_name=cls.__name__, attr_name=name)
+                raise AttributeError(msg)
+        super().__setattr__(name, value)

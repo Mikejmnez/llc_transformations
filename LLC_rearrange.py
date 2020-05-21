@@ -232,6 +232,12 @@ class LLCtransformation:
             else:
                 varName = varlist
                 varlist = [varlist]
+        elif len(varlist) > 0:
+            varlist = list(varlist)
+            varName = 'XG'
+        elif len(varlist) == 0:
+            raise ValueError("Empty list of variables")
+
 
         arc_faces, Nx_ac_nrot, Ny_ac_nrot, Nx_ac_rot, Ny_ac_rot, ARCT = arct_connect(ds, varName, faces)
 

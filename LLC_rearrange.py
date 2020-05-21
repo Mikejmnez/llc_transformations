@@ -394,6 +394,38 @@ def init_vars(ds, DSNEW, varlist):
     return DSNEW
 
 
+def drop_size(ds):
+    coords = {}
+    for crd in ds.coords:
+        if crd in ['X', 'Y']:
+            array = ds.coords[crd].values[0:-1]
+        else:
+            array = ds.coords[crd].values
+        attrs = ds.coords[crd].attrs
+        coords = {**coords, **{crd: ((crd,), array, attrs )}}
+
+    DS_final = xr.Dataset(coords)
+    for dim in DS_final.dims:
+        DS_final[dim].attrs = ds[dim].attrs
+    for varName in ds.data_vars:
+        dims = Dims([dim for dim in ds[varName].dims][::-1])
+        if len(dims) == 1:
+            DS_final[varName] = ds[varName]
+        else:
+            if len(dims.X) + len(dims.Y) == 2:
+                arg = {dims.X: slice(0, -1), dims.Y: slice(0, -1)}
+            elif len(dims.X) + len(dims.Y) == 6:
+                arg = {}
+            elif len(dims.X) + len(dims.Y) == 4:
+                if len(dims.X) == 1:
+                    arg = {dims.X: slice(0, -1)}
+                elif len(dims.Y) == 1:
+                    arg = {dims.Y: slice(0, -1)}
+            DS_final[varName] = ds[varName].isel(**arg)
+        DS_final[varName].attrs = ds[varName].attrs
+    return DS_final
+
+
 def pos_chunks(faces, arc_faces, chunksY, chunksX):
     nrotA = [k for k in range(3)]
     nrotB = [k for k in range(3, 6)]

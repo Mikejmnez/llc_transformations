@@ -13,6 +13,7 @@ class LLCtransformation:
         transformation,
         centered='Atlantic',
         faces='all',
+        drop=False,
     ):
         self._ds = ds  # xarray.DataSet
         self._varlist = varlist  # variables names to be transformed
@@ -27,6 +28,7 @@ class LLCtransformation:
         varlist,
         centered='Arctic',
         faces='all',
+        drop=False,
     ):
         """ Transforms the dataset by removing faces as a dimension, into a
         new dataset centered at the arctic, while preserving the grid.
@@ -196,6 +198,8 @@ class LLCtransformation:
                             dsnew[varName].isel(**arg)[:] = data.values
                         else:
                             dsnew[varName].isel(**arg).transpose(*dtr)[:] = data.values
+        if drop is True:
+            dsnew = drop_size(dsnew)
         return dsnew
 
     @classmethod
@@ -205,6 +209,7 @@ class LLCtransformation:
         varlist,
         centered,
         faces='all',
+        drop=False
     ):
         """ Transforms the dataset in which faces appears as a dimension into
         one with faces, with grids and variables sharing a common grid
@@ -333,6 +338,8 @@ class LLCtransformation:
             DS = NR_dsnew.combine_first(R_dsnew)
 
         DS = DS.reset_coords()
+        if drop is True:
+            DS = drop_size(DS)
 
         return DS
 

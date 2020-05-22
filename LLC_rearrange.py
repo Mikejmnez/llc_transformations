@@ -199,7 +199,7 @@ class LLCtransformation:
                         else:
                             dsnew[varName].isel(**arg).transpose(*dtr)[:] = data.values
         if drop is True:
-            dsnew = drop_size(dsnew, transformation)
+            dsnew = drop_size(dsnew, 'arctic_centered')
         return dsnew
 
     @classmethod
@@ -345,7 +345,7 @@ class LLCtransformation:
 
         DS = DS.reset_coords()
         if drop is True:
-            DS = drop_size(DS, transformation)
+            DS = drop_size(DS, 'arctic_crown')
 
         return DS
 

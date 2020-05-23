@@ -4,7 +4,15 @@ import reprlib
 
 
 class LLCtransformation:
-    """ A class containing the transformation of LLCgrids"""
+    """ A class containing the transformation of LLC grids"""
+    __slots__ = (
+        "ds",
+        "varlist",
+        "transformation",
+        "centered",
+        "faces",
+        "drop",
+    )
 
     def __init__(
         self,

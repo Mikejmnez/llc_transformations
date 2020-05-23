@@ -71,9 +71,6 @@ class LLCtransformation:
         if centered == 'Atlantic':
             ix = [1, 2, 1, 1, 0]
             jy = [0, 1, 1, 2, 1]
-            # shifts at u- and v-points
-            xs = [[-1, -1], [-1, -1], [-1, -1], [-1, -1], [0, -1]]
-            ys = [[0, -1], [-1, -1], [-1, -1], [-1, -1], [-1, -1]]
             nrot = _np.array([2])
             Arot = _np.array([5, 6, 7])
             Brot = _np.array([10])
@@ -81,8 +78,6 @@ class LLCtransformation:
         elif centered == 'Pacific':
             ix = [1, 0, 1, 1, 2]
             jy = [2, 1, 1, 0, 1]
-            xs = [[-1, -1], [0, -1], [-1, -1], [-1, -1], [-1, -1]]
-            ys = [[-1, -1], [-1, -1], [-1, -1], [0, -1], [-1, -1]]
             nrot = _np.array([10])
             Arot = _np.array([])
             Brot = _np.array([2])
@@ -90,8 +85,6 @@ class LLCtransformation:
         elif centered == 'Arctic':
             ix = [0, 1, 1, 2, 1]
             jy = [1, 0, 1, 1, 2]
-            xs = [[0, -1], [-1, -1], [-1, -1], [-1, -1], [-1, -1]]
-            ys = [[-1, -1], [0, -1], [-1, -1], [-1, -1], [-1, -1]]
             nrot = _np.array([6, 5, 7])
             Arot = _np.array([10])
             Brot = _np.array([])

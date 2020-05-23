@@ -23,7 +23,7 @@ class LLCtransformation:
 
     @classmethod
     def arctic_centered(
-        self,
+        cls,
         ds,
         varlist,
         centered='Arctic',
@@ -213,7 +213,7 @@ class LLCtransformation:
 
     @classmethod
     def arctic_crown(
-        self,
+        cls,
         ds,
         varlist,
         centered,

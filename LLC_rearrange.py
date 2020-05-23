@@ -48,7 +48,7 @@ class LLCtransformation:
 
         if isinstance(faces, str):
             faces = _np.array([2, 5, 6, 7, 10])
-        if isinstance(faces, list):
+        if isinstance(faces, list) or isinstance(faces, _np.ndarray):
             face = [fac for fac in faces if fac not in [2, 5, 6, 7, 10]]
             if len(face) > 0:
                 raise Warning("Range of latitudes is beyond the scope of"

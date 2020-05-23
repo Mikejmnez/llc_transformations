@@ -573,7 +573,7 @@ def pos_chunks(faces, arc_faces, chunksY, chunksX):
                     elif k == rotB[2]:
                         yk = 2
         else:
-            print('face index not in LLC grid')
+            raise ValueError("face index not in LLC grid")
         POSY.append(chunksY[yk])
         POSX.append(chunksX[xk])
     # This to create a new list with positions for Arctic cap slices
@@ -585,7 +585,7 @@ def pos_chunks(faces, arc_faces, chunksY, chunksX):
 
     if len(aface_rot) == 0:
         if len(aface_nrot) == 0:
-            print('no arctic faces')
+            # print('no arctic faces')
         else:
             pos_r = chunksY[-1][-1]
             pos_l = chunksY[-1][0]
@@ -631,8 +631,9 @@ def chunk_sizes(faces, Nx, Ny, rotated=False):
                 tNy = Ny[0]
             elif len(B_list) == 2:
                 if min(B_list) == B_ref[0] and max(B_list) == B_ref[-1]:
-                    print("error, these faces do not connect. Not possible to"
-                          "create a single dataset that minimizes nans")
+                    raise ValueError("These faces do not connect. Not"
+                                     "possible to create a single dataset"
+                                     "that minimizes nans.")
                 else:
                     tNy = len(B_list) * Ny[0]
             else:
@@ -640,7 +641,7 @@ def chunk_sizes(faces, Nx, Ny, rotated=False):
         else:
             tNx = 0
             tNy = 0
-            print('error, no data survives the cutout. Change the values')
+            raise ValueError("No data survives the cutout.")
     else:
         if len(B_list) == 0:
             tNx = Nx[0]
@@ -648,8 +649,9 @@ def chunk_sizes(faces, Nx, Ny, rotated=False):
                 tNy = Ny[0]
             elif len(A_list) == 2:
                 if min(A_list) == A_ref[0] and max(A_list) == A_ref[-1]:
-                    print("error, these faces do not connect. Not possible to"
-                          "create a single datase that minimizes nans")
+                    raise ValueError("These faces do not connect. Not"
+                                     "possible to create a single datase"
+                                     "that minimizes nans")
                     tNy = 0
                 else:
                     tNy = len(A_list) * Ny[0]
@@ -665,10 +667,10 @@ def chunk_sizes(faces, Nx, Ny, rotated=False):
                         tNy = Ny[0]
                     else:
                         tNy = 0
-                        print('Error, faces do not connect within facet')
+                        raise ValueError("faces do not connect within facet")
                 elif len(A_list) == 2:
                     if min(A_list) == A_ref[0] and max(A_list) == A_ref[-1]:
-                        print('Error, faces do not connect within facet')
+                        raise ValueError("faces do not connect within facet")
                         tNy = 0
                     else:
                         iA = [_np.where(faces[nk] == A_ref)[0][0] for nk in range(len(faces)) if faces[nk] in A_ref]
@@ -676,14 +678,17 @@ def chunk_sizes(faces, Nx, Ny, rotated=False):
                         if iA == iB:
                             tNy = len(A_list) * Ny[0]
                         else:
-                            print('error, not all faces connect equally')
+                            raise ValueError("Not all faces connect equally,"
+                                             "ragged arrays not supported"
+                                             )
                             tNy = 0
                 else:
                     tNy = len(A_list) * Ny[0]
             else:
                 tNy = 0
-                print("Number of faces in facet A is not equal to the number"
-                      "of faces in facet B.")
+                raise ValueError("Number of faces in facet A is not equal to"
+                                 "the number of faces in facet B. Ragged"
+                                 "arrays are not supported")
     return tNy, tNx
 
 

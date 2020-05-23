@@ -31,7 +31,9 @@ class LLCtransformation:
         drop=False,
     ):
         """ Transforms the dataset by removing faces as a dimension, into a
-        new dataset centered at the arctic, while preserving the grid. This is ideal for data at high latitude (Norther Hemisphere) and is limited to range of latitudes within faces/tiles [2, 5, 6, 7, 10]
+        new dataset centered at the arctic, while preserving the grid. This is
+        ideal for data at high latitude (Norther Hemisphere) and is limited to
+        range of latitudes within faces/tiles [2, 5, 6, 7, 10]
         """
         Nx = len(ds['X'])
         Ny = len(ds['Y'])
@@ -42,10 +44,9 @@ class LLCtransformation:
             face = [fac for fac in faces if fac not in [2, 5, 6, 7, 10]]
             if len(face) > 0:
                 raise Warning("Range of latitudes is beyond the scope of"
-                    "this rearrangement of faces."
-                )
+                              "this rearrangement of faces."
+                              )
             faces = _np.array([2, 5, 6, 7, 10])
-
 
         if isinstance(varlist, str):
             if varlist == 'all':
@@ -88,7 +89,7 @@ class LLCtransformation:
             Brot = _np.array([])
             Crot = _np.array([2])
         else:
-            print('raise error: Centering not supported')
+            raise ValueError("Centering not supported")
         psX = []
         psY = []
         for i in range(len(ix)):
@@ -225,6 +226,11 @@ class LLCtransformation:
         """
         Nx = len(ds['X'])
         Ny = len(ds['Y'])
+
+        if centered not in ['Atlantic', 'Pacific']:
+            raise ValueError("Centering option not recognized. Options are"
+                             "Atlantic or Pacific"
+                             )
 
         if isinstance(faces, str):
             faces = _np.arange(13)

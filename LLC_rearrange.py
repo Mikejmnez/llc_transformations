@@ -31,13 +31,21 @@ class LLCtransformation:
         drop=False,
     ):
         """ Transforms the dataset by removing faces as a dimension, into a
-        new dataset centered at the arctic, while preserving the grid.
+        new dataset centered at the arctic, while preserving the grid. This is ideal for data at high latitude (Norther Hemisphere) and is limited to range of latitudes within faces/tiles [2, 5, 6, 7, 10]
         """
         Nx = len(ds['X'])
         Ny = len(ds['Y'])
 
         if isinstance(faces, str):
             faces = _np.array([2, 5, 6, 7, 10])
+        if isinstance(faces, list):
+            face = [fac for fac in faces if fac not in [2, 5, 6, 7, 10]]
+            if len(face) > 0:
+                raise Warning("Range of latitudes is beyond the scope of"
+                    "this rearrangement of faces."
+                )
+            faces = _np.array([2, 5, 6, 7, 10])
+
 
         if isinstance(varlist, str):
             if varlist == 'all':
@@ -102,29 +110,29 @@ class LLCtransformation:
             else:
                 for k in range(len(faces)):
                     fac = 1
-                    if dims.X == 'Xp1':  # xshift
-                        xslice = slice(psX[k][0] + xs[k][0],
-                                       psX[k][1] + xs[k][1])
-                    else:
-                        xslice = slice(psX[k][0], psX[k][1])
-                    if dims.Y == 'Yp1':  # yshift
-                        yslice = slice(psY[k][0] + ys[k][0],
-                                       psY[k][1] + ys[k][1])
-                    else:
-                        yslice = slice(psY[k][0], psY[k][1])
+                    # if dims.X == 'Xp1':  # xshift
+                    #     xslice = slice(psX[k][0] + xs[k][0],
+                    #                    psX[k][1] + xs[k][1])
+                    # else:
+                    xslice = slice(psX[k][0], psX[k][1])
+                    # if dims.Y == 'Yp1':  # yshift
+                    #     yslice = slice(psY[k][0] + ys[k][0],
+                    #                    psY[k][1] + ys[k][1])
+                    # else:
+                    yslice = slice(psY[k][0], psY[k][1])
                     arg = {dims.X: xslice, dims.Y: yslice}
                     data = ds[varName].isel(face=faces[k])
                     if faces[k] in nrot:
-                        if len(dims.Y) == 3 and faces[k] == 5:
-                            narg = {dims.Y: slice(0, -1)}
-                            data = data.isel(narg)
-                        if len(dims.Y) == 3 and faces[k] == 2:
-                            narg = {dims.Y: slice(0, -1)}
-                            data = data.isel(narg)
-                        if len(dims.X) + len(dims.Y) == 6:
-                            if centered == 'Arctic' and faces[k] == 2:
-                                narg = {dims.Y: slice(0, -1)}
-                                data = data.isel(narg)
+                        # if len(dims.Y) == 3 and faces[k] == 5:
+                        #     narg = {dims.Y: slice(0, -1)}
+                        #     data = data.isel(narg)
+                        # if len(dims.Y) == 3 and faces[k] == 2:
+                        #     narg = {dims.Y: slice(0, -1)}
+                        #     data = data.isel(narg)
+                        # if len(dims.X) + len(dims.Y) == 6:
+                        #     if centered == 'Arctic' and faces[k] == 2:
+                        #         narg = {dims.Y: slice(0, -1)}
+                        #         data = data.isel(narg)
                         dsnew[varName].isel(**arg)[:] = data.values
                     else:
                         dtr = list(dims)[::-1]
@@ -141,27 +149,27 @@ class LLCtransformation:
                                             fac = -1
                                 _DIMS = [dim for dim in ds[vName].dims if dim != 'face']
                                 _dims = Dims(_DIMS[::-1])
-                                if len(_dims.Y) == 3 and faces[k] == 2:
-                                    narg = {_dims.Y: slice(0, -1)}
-                                    data = data.isel(narg)
-                                elif len(dims.X) == 3 and faces[k] == 5:
-                                    narg = {_dims.Y: slice(0, -1)}
-                                    data = data.isel(narg)
-                                elif len(dims.Y) == 3 and faces[k] == 7:
-                                    narg = {_dims.X: slice(0, -1)}
-                                    data = data.isel(narg)
+                                # if len(_dims.Y) == 3 and faces[k] == 2:
+                                #     narg = {_dims.Y: slice(0, -1)}
+                                #     data = data.isel(narg)
+                                # elif len(dims.X) == 3 and faces[k] == 5:
+                                #     narg = {_dims.Y: slice(0, -1)}
+                                #     data = data.isel(narg)
+                                # elif len(dims.Y) == 3 and faces[k] == 7:
+                                #     narg = {_dims.X: slice(0, -1)}
+                                #     data = data.isel(narg)
                                 sort_arg = {'variables': _dims.X,
                                             'ascending': False}
-                            if len(dims.X) + len(dims.Y) == 6:
-                                if centered == 'Pacific' and faces[k] == 5:
-                                    narg = {dims.Y: slice(0, -1)}
-                                    data = data.isel(narg)
-                                if centered == 'Pacific' and faces[k] == 7:
-                                    narg = {dims.X: slice(0, -1)}
-                                    data = data.isel(narg)
-                                if centered == 'Arctic' and faces[k] == 2:
-                                    narg = {dims.Y: slice(0, -1)}
-                                    data = data.isel(narg)
+                            # if len(dims.X) + len(dims.Y) == 6:
+                            #     if centered == 'Pacific' and faces[k] == 5:
+                            #         narg = {dims.Y: slice(0, -1)}
+                            #         data = data.isel(narg)
+                            #     if centered == 'Pacific' and faces[k] == 7:
+                            #         narg = {dims.X: slice(0, -1)}
+                            #         data = data.isel(narg)
+                            #     if centered == 'Arctic' and faces[k] == 2:
+                            #         narg = {dims.Y: slice(0, -1)}
+                            #         data = data.isel(narg)
                         elif faces[k] in Arot:
                             sort_arg = {'variables': dims.Y,
                                         'ascending': False}
@@ -176,23 +184,23 @@ class LLCtransformation:
                                 _dims = Dims(_DIMS[::-1])
                                 sort_arg = {'variables': _dims.Y,
                                             'ascending': False}
-                            if len(dims.X) + len(dims.Y) == 6:
-                                if centered == 'Atlantic' and faces[k] == 2:
-                                    narg = {dims.Y: slice(1, -1)}
-                                    data = data.isel(narg)
+                            # if len(dims.X) + len(dims.Y) == 6:
+                            #     if centered == 'Atlantic' and faces[k] == 2:
+                            #         narg = {dims.Y: slice(1, -1)}
+                            #         data = data.isel(narg)
                         elif faces[k] in Brot:
                             sort_arg = {'variables': [dims.X, dims.Y],
                                         'ascending': False}
                             if len(dims.X) + len(dims.Y) == 4:
                                 if vName not in metrics:
                                     fac = -1
-                                if len(dims.X) == 3 and faces[k] == 10:
-                                    narg = {dims.X: slice(0, -1)}
-                                    data = data.isel(narg)
-                            if len(dims.X) + len(dims.Y) == 6:
-                                if centered == 'Atlantic' and faces[k] == 10:
-                                    narg = {dims.X: slice(0, -1)}
-                                    data = data.isel(narg)
+                            #     if len(dims.X) == 3 and faces[k] == 10:
+                            #         narg = {dims.X: slice(0, -1)}
+                            #         data = data.isel(narg)
+                            # if len(dims.X) + len(dims.Y) == 6:
+                            #     if centered == 'Atlantic' and faces[k] == 10:
+                            #         narg = {dims.X: slice(0, -1)}
+                            #         data = data.isel(narg)
                         data = fac * data.sortby(**sort_arg)
                         if faces[k] in Brot:
                             dsnew[varName].isel(**arg)[:] = data.values

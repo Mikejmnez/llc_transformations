@@ -111,29 +111,11 @@ class LLCtransformation:
             else:
                 for k in range(len(faces)):
                     fac = 1
-                    # if dims.X == 'Xp1':  # xshift
-                    #     xslice = slice(psX[k][0] + xs[k][0],
-                    #                    psX[k][1] + xs[k][1])
-                    # else:
                     xslice = slice(psX[k][0], psX[k][1])
-                    # if dims.Y == 'Yp1':  # yshift
-                    #     yslice = slice(psY[k][0] + ys[k][0],
-                    #                    psY[k][1] + ys[k][1])
-                    # else:
                     yslice = slice(psY[k][0], psY[k][1])
                     arg = {dims.X: xslice, dims.Y: yslice}
                     data = ds[varName].isel(face=faces[k])
                     if faces[k] in nrot:
-                        # if len(dims.Y) == 3 and faces[k] == 5:
-                        #     narg = {dims.Y: slice(0, -1)}
-                        #     data = data.isel(narg)
-                        # if len(dims.Y) == 3 and faces[k] == 2:
-                        #     narg = {dims.Y: slice(0, -1)}
-                        #     data = data.isel(narg)
-                        # if len(dims.X) + len(dims.Y) == 6:
-                        #     if centered == 'Arctic' and faces[k] == 2:
-                        #         narg = {dims.Y: slice(0, -1)}
-                        #         data = data.isel(narg)
                         dsnew[varName].isel(**arg)[:] = data.values
                     else:
                         dtr = list(dims)[::-1]
@@ -150,27 +132,8 @@ class LLCtransformation:
                                             fac = -1
                                 _DIMS = [dim for dim in ds[vName].dims if dim != 'face']
                                 _dims = Dims(_DIMS[::-1])
-                                # if len(_dims.Y) == 3 and faces[k] == 2:
-                                #     narg = {_dims.Y: slice(0, -1)}
-                                #     data = data.isel(narg)
-                                # elif len(dims.X) == 3 and faces[k] == 5:
-                                #     narg = {_dims.Y: slice(0, -1)}
-                                #     data = data.isel(narg)
-                                # elif len(dims.Y) == 3 and faces[k] == 7:
-                                #     narg = {_dims.X: slice(0, -1)}
-                                #     data = data.isel(narg)
                                 sort_arg = {'variables': _dims.X,
                                             'ascending': False}
-                            # if len(dims.X) + len(dims.Y) == 6:
-                            #     if centered == 'Pacific' and faces[k] == 5:
-                            #         narg = {dims.Y: slice(0, -1)}
-                            #         data = data.isel(narg)
-                            #     if centered == 'Pacific' and faces[k] == 7:
-                            #         narg = {dims.X: slice(0, -1)}
-                            #         data = data.isel(narg)
-                            #     if centered == 'Arctic' and faces[k] == 2:
-                            #         narg = {dims.Y: slice(0, -1)}
-                            #         data = data.isel(narg)
                         elif faces[k] in Arot:
                             sort_arg = {'variables': dims.Y,
                                         'ascending': False}
@@ -185,23 +148,12 @@ class LLCtransformation:
                                 _dims = Dims(_DIMS[::-1])
                                 sort_arg = {'variables': _dims.Y,
                                             'ascending': False}
-                            # if len(dims.X) + len(dims.Y) == 6:
-                            #     if centered == 'Atlantic' and faces[k] == 2:
-                            #         narg = {dims.Y: slice(1, -1)}
-                            #         data = data.isel(narg)
                         elif faces[k] in Brot:
                             sort_arg = {'variables': [dims.X, dims.Y],
                                         'ascending': False}
                             if len(dims.X) + len(dims.Y) == 4:
                                 if vName not in metrics:
                                     fac = -1
-                            #     if len(dims.X) == 3 and faces[k] == 10:
-                            #         narg = {dims.X: slice(0, -1)}
-                            #         data = data.isel(narg)
-                            # if len(dims.X) + len(dims.Y) == 6:
-                            #     if centered == 'Atlantic' and faces[k] == 10:
-                            #         narg = {dims.X: slice(0, -1)}
-                            #         data = data.isel(narg)
                         data = fac * data.sortby(**sort_arg)
                         if faces[k] in Brot:
                             dsnew[varName].isel(**arg)[:] = data.values
@@ -425,18 +377,11 @@ def init_vars(ds, DSNEW, varlist):
 
 def drop_size(ds, transformation='arctic_crown'):
     coords = {}
-    # if transformation == 'arctic_crown':
     for crd in ds.coords:
         if crd in ['X', 'Y']:
             array = ds.coords[crd].values[0:-1]
         else:
             array = ds.coords[crd].values
-    # elif transformation == 'arctic_centered':
-    #     for crd in ds.coords:
-    #         if crd in ['X', 'Y']:
-    #             array = ds.coords[crd].values[0:-2]
-    #         else:
-    #             array = ds.coords[crd].values[0:-1]
 
     attrs = ds.coords[crd].attrs
     coords = {**coords, **{crd: ((crd,), array, attrs )}}
@@ -450,26 +395,14 @@ def drop_size(ds, transformation='arctic_crown'):
             DS_final[varName] = ds[varName]
         else:
             if len(dims.X) + len(dims.Y) == 2:
-                # if transformation == 'arctic_crown':
                 arg = {dims.X: slice(0, -1), dims.Y: slice(0, -1)}
-                # elif transformation == 'arctic_centered':
-                #     arg = {dims.X: slice(0, -2), dims.Y: slice(0, -2)}
             elif len(dims.X) + len(dims.Y) == 6:
-                # if transformation == 'arctic_crown':
                 arg = {}
-                # elif transformation == 'arctic_centered':
-                #     arg = {dims.X: slice(0, -1), dims.Y: slice(0, -1)}
             elif len(dims.X) + len(dims.Y) == 4:
                 if len(dims.X) == 1:
-                    # if transformation == 'arctic_crown':
                     arg = {dims.X: slice(0, -1)}
-                    # elif transformation == 'arctic_centered':
-                    #     arg = {dims.X: slice(0, -2), dims.Y: slice(0, -1)}
                 elif len(dims.Y) == 1:
-                    # if transformation == 'arctic_crown':
                     arg = {dims.Y: slice(0, -1)}
-                    # elif transformation == 'arctic_centered':
-                    #     arg = {dims.X: slice(0, -1), dims.Y: slice(0, -2)}
             DS_final[varName] = ds[varName].isel(**arg)
         DS_final[varName].attrs = ds[varName].attrs
     return DS_final
@@ -869,7 +802,7 @@ def arct_connect(ds, varName, all_faces):
 
 
 class Dims:
-    axes = 'XYZT'  # shortcut axis names
+    axes = 'XYZT'  # shortcut axis names by order of appearance
 
     def __init__(self, vars):
         self._vars = tuple(vars)

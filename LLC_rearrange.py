@@ -584,9 +584,7 @@ def pos_chunks(faces, arc_faces, chunksY, chunksX):
     aface_rot = [k for k in arc_faces if k in rotA + rotB]
 
     if len(aface_rot) == 0:
-        if len(aface_nrot) == 0:
-            # print('no arctic faces')
-        else:
+        if len(aface_nrot) > 0:
             pos_r = chunksY[-1][-1]
             pos_l = chunksY[-1][0]
             if len(aface_nrot) == 1:

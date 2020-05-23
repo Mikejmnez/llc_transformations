@@ -425,18 +425,18 @@ def init_vars(ds, DSNEW, varlist):
 
 def drop_size(ds, transformation='arctic_crown'):
     coords = {}
-    if transformation == 'arctic_crown':
-        for crd in ds.coords:
-            if crd in ['X', 'Y']:
-                array = ds.coords[crd].values[0:-1]
-            else:
-                array = ds.coords[crd].values
-    elif transformation == 'arctic_centered':
-        for crd in ds.coords:
-            if crd in ['X', 'Y']:
-                array = ds.coords[crd].values[0:-2]
-            else:
-                array = ds.coords[crd].values[0:-1]
+    # if transformation == 'arctic_crown':
+    for crd in ds.coords:
+        if crd in ['X', 'Y']:
+            array = ds.coords[crd].values[0:-1]
+        else:
+            array = ds.coords[crd].values
+    # elif transformation == 'arctic_centered':
+    #     for crd in ds.coords:
+    #         if crd in ['X', 'Y']:
+    #             array = ds.coords[crd].values[0:-2]
+    #         else:
+    #             array = ds.coords[crd].values[0:-1]
 
     attrs = ds.coords[crd].attrs
     coords = {**coords, **{crd: ((crd,), array, attrs )}}
@@ -450,26 +450,26 @@ def drop_size(ds, transformation='arctic_crown'):
             DS_final[varName] = ds[varName]
         else:
             if len(dims.X) + len(dims.Y) == 2:
-                if transformation == 'arctic_crown':
-                    arg = {dims.X: slice(0, -1), dims.Y: slice(0, -1)}
-                elif transformation == 'arctic_centered':
-                    arg = {dims.X: slice(0, -2), dims.Y: slice(0, -2)}
+                # if transformation == 'arctic_crown':
+                arg = {dims.X: slice(0, -1), dims.Y: slice(0, -1)}
+                # elif transformation == 'arctic_centered':
+                #     arg = {dims.X: slice(0, -2), dims.Y: slice(0, -2)}
             elif len(dims.X) + len(dims.Y) == 6:
-                if transformation == 'arctic_crown':
-                    arg = {}
-                elif transformation == 'arctic_centered':
-                    arg = {dims.X: slice(0, -1), dims.Y: slice(0, -1)}
+                # if transformation == 'arctic_crown':
+                arg = {}
+                # elif transformation == 'arctic_centered':
+                #     arg = {dims.X: slice(0, -1), dims.Y: slice(0, -1)}
             elif len(dims.X) + len(dims.Y) == 4:
                 if len(dims.X) == 1:
-                    if transformation == 'arctic_crown':
-                        arg = {dims.X: slice(0, -1)}
-                    elif transformation == 'arctic_centered':
-                        arg = {dims.X: slice(0, -2), dims.Y: slice(0, -1)}
+                    # if transformation == 'arctic_crown':
+                    arg = {dims.X: slice(0, -1)}
+                    # elif transformation == 'arctic_centered':
+                    #     arg = {dims.X: slice(0, -2), dims.Y: slice(0, -1)}
                 elif len(dims.Y) == 1:
-                    if transformation == 'arctic_crown':
-                        arg = {dims.Y: slice(0, -1)}
-                    elif transformation == 'arctic_centered':
-                        arg = {dims.X: slice(0, -1), dims.Y: slice(0, -2)}
+                    # if transformation == 'arctic_crown':
+                    arg = {dims.Y: slice(0, -1)}
+                    # elif transformation == 'arctic_centered':
+                    #     arg = {dims.X: slice(0, -1), dims.Y: slice(0, -2)}
             DS_final[varName] = ds[varName].isel(**arg)
         DS_final[varName].attrs = ds[varName].attrs
     return DS_final

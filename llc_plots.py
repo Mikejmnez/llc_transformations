@@ -13,7 +13,7 @@ def llc_plots(ds, varName, plotType='pcolormesh', **kwargs):
     xslice = slice(0, -1, 10)
     yslice = slice(0, -1, 10)
 
-    A, B, C, D, E, ARCT = arct_connect(ds, varName, faces='all')
+    A, B, C, D, E, ARCT = arct_connect(ds, varName, faces=np.arange(13))
     # ARCT is a list with 4
 
     face_to_axis = {0: (3, 2), 1: (2, 2), 2: (1, 2),

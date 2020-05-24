@@ -19,22 +19,23 @@ class LLCtransformation:
         ds,
         varlist,
         transformation,
-        centered='Atlantic',
-        faces='all',
-        drop=False,
+        centered,
+        faces,
+        drop,
     ):
         self._ds = ds  # xarray.DataSet
         self._varlist = varlist  # variables names to be transformed
         self._transformation = transformation  # str - type of transf
         self._centered = centered  # str - where to be centered
         self._faces = faces  # faces involved in transformation
+        self._drop = drop
 
     @classmethod
     def arctic_centered(
         cls,
         ds,
         varlist,
-        centered='Arctic',
+        centered='Atlantic',
         faces='all',
         drop=False,
     ):
@@ -43,6 +44,7 @@ class LLCtransformation:
         ideal for data at high latitude (Norther Hemisphere) and is limited to
         range of latitudes within faces/tiles [2, 5, 6, 7, 10]
         """
+
         Nx = len(ds['X'])
         Ny = len(ds['Y'])
 
@@ -170,13 +172,14 @@ class LLCtransformation:
         ds,
         varlist,
         centered,
-        faces='all',
+        faces,
         drop=False,
     ):
         """ Transforms the dataset in which faces appears as a dimension into
         one with faces, with grids and variables sharing a common grid
         orientation.
         """
+
         Nx = len(ds['X'])
         Ny = len(ds['Y'])
 

@@ -163,7 +163,7 @@ class LLCtransformation:
                         else:
                             dsnew[varName].isel(**arg).transpose(*dtr)[:] = data.values
         if drop is True:
-            dsnew = drop_size(dsnew, 'arctic_centered')
+            dsnew = drop_size(dsnew)
         return dsnew
 
     @classmethod
@@ -315,7 +315,7 @@ class LLCtransformation:
 
         DS = DS.reset_coords()
         if drop is True:
-            DS = drop_size(DS, 'arctic_crown')
+            DS = drop_size(DS)
 
         return DS
 
@@ -379,7 +379,7 @@ def init_vars(ds, DSNEW, varlist):
     return DSNEW
 
 
-def drop_size(ds, transformation='arctic_crown'):
+def drop_size(ds):
     coords = {}
     for crd in ds.coords:
         if crd in ['X', 'Y']:
@@ -388,7 +388,7 @@ def drop_size(ds, transformation='arctic_crown'):
             array = ds.coords[crd].values
 
     attrs = ds.coords[crd].attrs
-    coords = {**coords, **{crd: ((crd,), array, attrs )}}
+    coords = {**coords, **{crd: ((crd,), array, attrs)}}
 
     DS_final = _xr.Dataset(coords)
     for dim in DS_final.dims:

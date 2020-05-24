@@ -331,23 +331,18 @@ def make_chunks(Nx, Ny):
 
 
 def make_array(ds, tNx, tNy, X0=0):
-    if 'Z' in ds.coords:
-        crds = {'X': (('X',), _np.arange(X0, X0 + tNx), {'axis': 'X'}),
-                'Xp1': (('Xp1',), _np.arange(X0, X0 + tNx), {'axis': 'X'}),
-                'Y': (('Y',), _np.arange(tNy), {'axis': 'Y'}),
-                'Yp1': (('Yp1',), _np.arange(tNy), {'axis': 'Y'}),
-                'Z': (('Z',), _np.array(ds['Z'].data), {'axis': 'Z'}),
-                'Zp1': (('Zp1',), _np.array(ds['Zp1'].data), {'axis': 'Z'}),
-                'Zl': (('Zl',), _np.array(ds['Zl'].data), {'axis': 'Z'}),
-                'time': (('time',), _np.array(ds['time'].data), {'axis': 'T'}),
-                }
-    else:
-        crds = {'X': (('X',), _np.arange(X0, X0 + tNx), {'axis': 'X'}),
-                'Xp1': (('Xp1',), _np.arange(X0, X0 + tNx), {'axis': 'X'}),
-                'Y': (('Y',), _np.arange(tNy), {'axis': 'Y'}),
-                'Yp1': (('Yp1',), _np.arange(tNy), {'axis': 'Y'}),
-                'time': (('time',), _np.array(ds['time'].data), {'axis': 'T'}),
-                }
+    crds = {
+        "X": (("X",), _np.arange(X0, X0 + tNx), {"axis": "X"}),
+        "Xp1": (("Xp1",), _np.arange(X0, X0 + tNx), {"axis": "X"}),
+        "Y": (("Y",), _np.arange(tNy), {"axis": "Y"}),
+        "Yp1": (("Yp1",), _np.arange(tNy), {"axis": "Y"}),
+    }
+    old_coords = ["X", "Xp1", "Y", "Yp1", "face"]
+    coords = [k for k in ds.coords if k not in old_coords]
+    for crd in coords:
+        array = ds.coords[crd].values
+        attrs = ds.coords[crd].attrs
+        crds = {**crds, **{crd: ((crd,), array, attrs)}}
 
     dsnew = _xr.Dataset(coords=crds)
     for dim in dsnew.dims:

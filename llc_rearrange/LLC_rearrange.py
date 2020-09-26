@@ -383,8 +383,8 @@ def drop_size(ds, transformation='arctic_crown'):
         else:
             array = ds.coords[crd].values
 
-    attrs = ds.coords[crd].attrs
-    coords = {**coords, **{crd: ((crd,), array, attrs )}}
+        attrs = ds.coords[crd].attrs
+        coords = {**coords, **{crd: ((crd,), array, attrs )}}
 
     DS_final = _xr.Dataset(coords)
     for dim in DS_final.dims:

@@ -12,3 +12,12 @@ od = ospy.open_oceandataset.from_catalog('LLClocal', url)
 od._ds = od._ds.drop({'k', 'k_p1', 'k_u', 'k_l'})
 
 
+def test_original_dims():
+    """ test original dimensions
+    """
+    temp = od._ds['T']
+    dims = Dims([dim for dim in temp.dims][::-1])
+    assert dims.X == 'X'
+    assert dims.Y == 'Y'
+    assert dims.Z == 'face'
+    assert dims.T == 'Z'

@@ -24,8 +24,13 @@ cat, entries, url, intake_switch = _find_entries('LLClocal', url)
 entry = entries[-1]
 mtdt = cat[entry].metadata
 rename = mtdt.pop('rename', None)
+ren = {'THETA':'T', 'UVEL':'U', 'VVEL':'V'}
+rename = {**rename, **ren}
 od._ds = od._ds.rename(rename)
 metadata = {**metadata, **mtdt}
+swap_dims = mtdt.pop("swap_dims", None)
+if swap_dims is not None:
+    od._ds = od._ds.swap_dims(swap_dims)
 for var in ['aliases', 'parameters', 'name', 'description', 'projection']:
     val = metadata.pop(var, None)
     if val is not None:
@@ -37,5 +42,5 @@ face_connections = metadata.pop('face_connections', None)
 if face_connections is not None:
     od = od.set_face_connections(**face_connections)
 
-od._ds = od._ds.drop_dims({'k', 'k_p1', 'k_u', 'k_l'})
-
+od._ds = od._ds.drop({'k', 'k_p1', 'k_u', 'k_l'})
+# print(od._ds.data_vars)

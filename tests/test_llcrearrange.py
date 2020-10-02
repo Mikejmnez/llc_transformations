@@ -1,5 +1,6 @@
 # tests for llc_rearrange.py
 import pytest
+import numpy as _np
 from conftest import od
 import sys
 sys.path.append('/Users/Mikejmnez/llc_transformations/llc_rearrange/')
@@ -71,19 +72,93 @@ def test_arc_connect(od, faces, expected, acshape):
 @pytest.mark.parametrize(
     "faces, Nx, Ny, rot, exp_tNX, exp_tNY", [
         (faces[:6], Nx, Ny, False, 180, 270),
-        (faces[6:], Nx, Ny, True, 180, 270)
+        (faces[6:], Nx, Ny, True, 180, 270),
+        (faces[:3], Nx, Ny, False, 90, 270),
+        (faces[3:6], Nx, Ny, False, 90, 270),
+        (faces[7:10], Nx, Ny, True, 90, 270),
+        (faces[10:], Nx, Ny, True, 90, 270),
+        ([0, 2], Nx, Ny, False, None, None),
+        ([1, 3], Nx, Ny, False, None, None),
+        ([0, 4], Nx, Ny, False, None, None),
+        ([0, 5], Nx, Ny, False, None, None),
+        ([1, 3], Nx, Ny, False, None, None),
+        ([1, 5], Nx, Ny, False, None, None),
+        ([2, 3], Nx, Ny, False, None, None),
+        ([2, 4], Nx, Ny, False, None, None),
+        ([0, 1, 4, 5], Nx, Ny, False, None, None),
+        ([1, 2, 3, 4], Nx, Ny, False, None, None),
+        ([0, 4, 5], Nx, Ny, False, None, None),
+        ([7, 10], Nx, Ny, True, 180, 90),
+        ([7, 11], Nx, Ny, True, None, None),
+        ([7, 12], Nx, Ny, True, None, None),
+        ([8, 10], Nx, Ny, True, None, None),
+        ([8, 12], Nx, Ny, True, None, None),
+        ([9, 10], Nx, Ny, True, None, None),
+        ([9, 11], Nx, Ny, True, None, None),
+        ([7, 8, 11, 12], Nx, Ny, True, None, None),
+        ([8, 9, 10, 11], Nx, Ny, True, None, None)
     ]
-
 )
 def test_chunk_sizes(faces, Nx, Ny, rot, exp_tNX, exp_tNY):
-    tNy, tNx = chunk_sizes(faces, [Nx], [Ny], rotated=rot)
-    assert tNy == exp_tNY
-    assert tNx == exp_tNX
+    if _is_connect(faces, rotated=rot):
+        tNy, tNx = chunk_sizes(faces, [Nx], [Ny], rotated=rot)
+        assert tNy == exp_tNY
+        assert tNx == exp_tNX
+    else:
+        with pytest.raises(ValueError):
+            tNy, tNx = chunk_sizes(faces, [Nx], [Ny], rotated=rot)
+            assert tNy == exp_tNY
+            assert tNx == exp_tNX
 
 
-
-
-
-
+def _is_connect(faces, rotated=False):
+    """ do faces in a facet connect? Not applicable to arc cap, and only
+    applicable to either rotated or not rotated facets"""
+    if rotated is False:
+        A_fac = _np.array([0, 1, 2])
+        B_fac = _np.array([3, 4, 5])
+    elif rotated is True:
+        A_fac = _np.array([7, 8, 9])
+        B_fac = _np.array([10, 11, 12])
+    A_list = [k for k in faces if k in A_fac]
+    B_list = [k for k in faces if k in B_fac]
+    cont = 1
+    if len(A_list) == 0:
+        if len(B_list) > 1:
+            if len(B_list) == 2:
+                if abs(B_list[1] - B_list[0]) > 1:
+                    cont = 0
+    else:
+        if len(B_list) == 0:
+            if len(A_list) > 1:
+                if len(A_list) == 2:
+                    if abs(A_list[1] - A_list[0]) > 1:
+                        cont = 0
+        else:
+            if len(B_list) == len(A_list):
+                if len(A_list) == 1:
+                    iA = [_np.where(faces[k] == A_fac)[0][0]
+                          for k in range(len(faces))
+                          if faces[k] in A_fac]
+                    iB = [_np.where(faces[k] == B_fac)[0][0]
+                          for k in range(len(faces))
+                          if faces[k] in B_fac]
+                    if iA != iB:
+                        cont = 0
+                if len(A_list) == 2:
+                    if abs(A_list[1] - A_list[0]) > 1:
+                        cont = 0
+                    else:
+                        iA = [_np.where(faces[k] == A_fac)[0][0]
+                              for k in range(len(faces))
+                              if faces[k] in A_fac]
+                        iB = [_np.where(faces[k] == B_fac)[0][0]
+                              for k in range(len(faces))
+                              if faces[k] in B_fac]
+                        if iA != iB:
+                            cont = 0
+            else:
+                cont = 0
+    return cont
 
 

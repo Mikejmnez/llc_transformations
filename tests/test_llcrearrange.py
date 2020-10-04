@@ -1,13 +1,17 @@
 # tests for llc_rearrange.py
 import pytest
 import numpy as _np
-from conftest import od
+# from conftest import od
 import sys
 sys.path.append('/Users/Mikejmnez/llc_transformations/llc_rearrange/')
 from LLC_rearrange import LLCtransformation as LLC
 from LLC_rearrange import make_chunks, make_array, drop_size, pos_chunks, chunk_sizes, face_connect, arct_connect
 from LLC_rearrange import Dims
+from oceanspy import open_oceandataset
 
+Datadir = './tests/'  # .oceanspy/tests/Data/
+ECCO_url = "{}catalog_ECCO.yaml".format(Datadir)
+od = open_oceandataset.from_catalog('LLC', ECCO_url)
 
 Nx = od._ds.dims['X']
 Ny = od._ds.dims['Y']
@@ -109,6 +113,35 @@ def test_chunk_sizes(faces, Nx, Ny, rot, exp_tNX, exp_tNY):
             tNy, tNx = chunk_sizes(faces, [Nx], [Ny], rotated=rot)
             assert tNy == exp_tNY
             assert tNx == exp_tNX
+
+
+# @pytest.mark.parametrize(
+#     "faces, acf, rot, NX, NY, exPX, exPY, exPaX, exPaY", [
+#         (faces[:7], [2, 5], False, Nx, Ny, , , , ),
+#         (faces[6:], [7, 10], True, Nx, Ny, , , , ),
+#         (faces[:3], [], False, Nx, Ny, , , , ),
+#         (faces[3:6], [5], False, Nx, Ny, , , , ),
+#         (faces[7:10], [7], True, Nx, Ny, , , , ),
+#         (faces[10:], [10], True, Nx, Ny, , , , ),
+#         ([7, 10], [7, 10], True, Nx, Ny, , , , ),
+#         ([2, 5], [7, 10], True, Nx, Ny, , , , ),
+#     ]
+# )
+# def test_pos_chunks(faces, acfs, rot, NX, NY, exPX, exPY, exPaX, exPaY):
+#     tNy, tNx = chunk_sizes(faces, [Nx], [Ny], rotated=rot)
+#     delNX = 0
+#     delNY = 0
+#     if len(ARCT) > 0:
+#         if rot:
+#             delNX = int(Nx / 2)
+#         else:
+#             delNY = int(Ny / 2)
+#     tNy = tNy + delNY
+#     tNx = tNx + delNX
+#     Nxc = np.arange(0, tNx + 1, Nx)
+#     Nyc = np.arange(0, tNy + 1, Ny)
+#     PY, PX, PYarc, PXarc = pos_chunks(faces)
+
 
 
 def _is_connect(faces, rotated=False):

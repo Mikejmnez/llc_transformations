@@ -572,7 +572,7 @@ def chunk_sizes(faces, Nx, Ny, rotated=False):
         else:
             tNx = 0
             tNy = 0
-            raise ValueError("No data survives the cutout.")
+            print("Zero data in a facet survives the cutout.")
     else:
         if len(B_list) == 0:
             tNx = Nx[0]

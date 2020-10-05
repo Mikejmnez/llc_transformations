@@ -47,7 +47,7 @@ sources:
     description: Test ECCO data
     driver: netcdf
     args:
-      urlpath: '.tests/Data/ECCO_v4/THETA/THETA_1992_01.nc'
+      urlpath: './tests/Data/ECCO_v4/THETA/THETA_1992_01.nc'
       xarray_kwargs:
         engine: netcdf4
         drop_variables: ['time_bnds']

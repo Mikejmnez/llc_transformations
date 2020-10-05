@@ -217,17 +217,21 @@ def test_make_chunks(faces, rot, NX, NY, expCX, expCY, epx, epy, epax, epay):
     assert epax == pxarc
 
 
-transf = ['arctic_crown', 'arctic_centered']
-varlist = ['T', 'U', 'V']
+# transf = ['arctic_crown', 'arctic_centered']
+# cent = ['Atlantic', 'Pacific']
+# varlist = ['T', 'U', 'V']
 
 
 # @pytest.mark.parametrize(
-#     "od, faces, varlist, transformation, centered, drop", [
-#         (od, [2, 6, 10], 'all', 'arctic_crown', 'Atlantic', True),
+#     "od, faces, varlist, transf, centered, drop, expNX, expNY", [
+#         (od, [2, 6, 10], 'all', transf[0], cent[0], True, 179, 179),
+#         (od, [2, 5, 6, 7, 10], 'T', transf[0], cent[0], False, 360, 360),
+#         (od, faces[:6])
 #     ],
 # )
-# def test_transformation(od, faces, varlist, transformation, centered, drop):
-#     ds = od._ds
+# def test_transformation(od, facess, varlist, transf, centered, drop, expNX,
+#                         expNY):
+#     ds = od._ds.reset_coords()
 #     grid_coords = od.grid_coords
 #     args = {
 #         "ds": ds,
@@ -241,6 +245,11 @@ varlist = ['T', 'U', 'V']
 #     elif transformation == 'arctic_centered':
 #         _transf = LLC.arctic_centered
 #     ds = _transf(**args)
+#     Nx = ds.dims['X']
+#     Ny = ds.dims['Y']
+#     assert Nx == expNX
+#     assert Ny == expNY
+
 
 
 def _is_connect(faces, rotated=False):

@@ -1,7 +1,6 @@
 # tests for llc_rearrange.py
 import pytest
 import numpy as _np
-# from conftest import od
 import sys
 sys.path.append('/Users/Mikejmnez/llc_transformations/llc_rearrange/')
 from LLC_rearrange import LLCtransformation as LLC
@@ -115,33 +114,133 @@ def test_chunk_sizes(faces, Nx, Ny, rot, exp_tNX, exp_tNY):
             assert tNx == exp_tNX
 
 
-# @pytest.mark.parametrize(
-#     "faces, acf, rot, NX, NY, exPX, exPY, exPaX, exPaY", [
-#         (faces[:7], [2, 5], False, Nx, Ny, , , , ),
-#         (faces[6:], [7, 10], True, Nx, Ny, , , , ),
-#         (faces[:3], [], False, Nx, Ny, , , , ),
-#         (faces[3:6], [5], False, Nx, Ny, , , , ),
-#         (faces[7:10], [7], True, Nx, Ny, , , , ),
-#         (faces[10:], [10], True, Nx, Ny, , , , ),
-#         ([7, 10], [7, 10], True, Nx, Ny, , , , ),
-#         ([2, 5], [7, 10], True, Nx, Ny, , , , ),
-#     ]
-# )
-# def test_pos_chunks(faces, acfs, rot, NX, NY, exPX, exPY, exPaX, exPaY):
-#     tNy, tNx = chunk_sizes(faces, [Nx], [Ny], rotated=rot)
-#     delNX = 0
-#     delNY = 0
-#     if len(ARCT) > 0:
-#         if rot:
-#             delNX = int(Nx / 2)
-#         else:
-#             delNY = int(Ny / 2)
-#     tNy = tNy + delNY
-#     tNx = tNx + delNX
-#     Nxc = np.arange(0, tNx + 1, Nx)
-#     Nyc = np.arange(0, tNy + 1, Ny)
-#     PY, PX, PYarc, PXarc = pos_chunks(faces)
+@pytest.mark.parametrize(
+    "faces, rot, NX, NY, expCX, expCY, epx, epy, epax, epay", [
+        (faces[:7], False, Nx, Ny, [[0, 90], [90, 180]],
+                                   [[0, 90], [90, 180], [180, 270]],
+                                   [[0, 90], [0, 90], [0, 90],
+                                    [90, 180], [90, 180], [90, 180]],
+                                   [[0, 90], [90, 180], [180, 270],
+                                    [0, 90], [90, 180], [180, 270]],
+                                   [[0, 90], [90, 180]],
+                                   [[270, 315], [270, 315]]),
+        (faces[6:], True, Nx, Ny, [[0, 90], [90, 180]],
+                                  [[0, 90], [90, 180], [180, 270]],
+                                  [[0, 90], [0, 90], [0, 90],
+                                   [90, 180], [90, 180], [90, 180]],
+                                  [[0, 90], [90, 180], [180, 270],
+                                   [0, 90], [90, 180], [180, 270]],
+                                  [[0, 90], [90, 180]],
+                                  [[270, 315], [270, 315]]),
+        (faces[:3] + [6], False, Nx, Ny, [[0, 90]],
+                                         [[0, 90], [90, 180], [180, 270]],
+                                         [[0, 90], [0, 90], [0, 90]],
+                                         [[0, 90], [90, 180], [180, 270]],
+                                         [[0, 90]], [[270, 315]]),
+        (faces[:3], False, Nx, Ny, [[0, 90]],
+                                   [[0, 90], [90, 180], [180, 270]],
+                                   [[0, 90], [0, 90], [0, 90]],
+                                   [[0, 90], [90, 180], [180, 270]],
+                                   [], []),
+        (faces[3:7], False, Nx, Ny, [[0, 90]],
+                                    [[0, 90], [90, 180], [180, 270]],
+                                    [[0, 90], [0, 90], [0, 90]],
+                                    [[0, 90], [90, 180], [180, 270]],
+                                    [[0, 90]], [[270, 315]]),
+        (faces[3:6], False, Nx, Ny, [[0, 90]],
+                                    [[0, 90], [90, 180], [180, 270]],
+                                    [[0, 90], [0, 90], [0, 90]],
+                                    [[0, 90], [90, 180], [180, 270]],
+                                    [], []),
+        (faces[6:10], True, Nx, Ny, [[0, 90]],
+                                    [[0, 90], [90, 180], [180, 270]],
+                                    [[0, 90], [0, 90], [0, 90]],
+                                    [[0, 90], [90, 180], [180, 270]],
+                                    [[0, 90]], [[270, 315]]),
+        (faces[7:10], True, Nx, Ny, [[0, 90]],
+                                    [[0, 90], [90, 180], [180, 270]],
+                                    [[0, 90], [0, 90], [0, 90]],
+                                    [[0, 90], [90, 180], [180, 270]],
+                                    [], []),
+        ([6] + faces[10:], True, Nx, Ny, [[0, 90]],
+                                         [[0, 90], [90, 180], [180, 270]],
+                                         [[0, 90], [0, 90], [0, 90]],
+                                         [[0, 90], [90, 180], [180, 270]],
+                                         [[0, 90]], [[270, 315]],),
+        (faces[10:], True, Nx, Ny, [[0, 90]],
+                                   [[0, 90], [90, 180], [180, 270]],
+                                   [[0, 90], [0, 90], [0, 90]],
+                                   [[0, 90], [90, 180], [180, 270]],
+                                   [], []),
+        ([6, 7, 10], True, Nx, Ny, [[0, 90], [90, 180]], [[0, 90]],
+                                   [[0, 90], [90, 180]],
+                                   [[0, 90], [0, 90]],
+                                   [[0, 90], [90, 180]],
+                                   [[90, 135], [90, 135]]),
+        ([2, 5, 6], False, Nx, Ny, [[0, 90], [90, 180]],
+                                   [[0, 90]],
+                                   [[0, 90], [90, 180]],
+                                   [[0, 90], [0, 90]],
+                                   [[0, 90], [90, 180]],
+                                   [[90, 135], [90, 135]]),
+    ]
+)
+def test_make_chunks(faces, rot, NX, NY, expCX, expCY, epx, epy, epax, epay):
+    if rot:
+        fs = [k for k in faces if k in _np.arange(7, 13)]
+    else:
+        fs = [k for k in faces if k in _np.arange(6)]
+    tNy, tNx = chunk_sizes(faces, [Nx], [Ny], rotated=rot)
+    delNX = 0
+    delNY = 0
+    afs = []
+    if 6 in faces:
+        acnrot_fs = [k for k in faces if k in _np.array([2, 5])]
+        acrot_fs = [k for k in faces if k in _np.array([7, 10])]
+        if rot:
+            delNX = int(Nx / 2)
+            afs = acrot_fs
+        else:
+            delNY = int(Ny / 2)
+            afs = acnrot_fs
+    tNy = tNy + delNY
+    tNx = tNx + delNX
+    Nxc = _np.arange(0, tNx + 1, Nx)
+    Nyc = _np.arange(0, tNy + 1, Ny)
+    xChunk, yChunk = make_chunks(Nxc, Nyc)
+    assert xChunk == expCX
+    assert yChunk == expCY
+    py, px, pyarc, pxarc = pos_chunks(fs, afs, yChunk, xChunk)
+    assert epy == py
+    assert epx == px
+    assert epay == pyarc
+    assert epax == pxarc
 
+
+transf = ['arctic_crown', 'arctic_centered']
+varlist = ['T', 'U', 'V']
+
+
+# @pytest.mark.parametrize(
+#     "od, faces, varlist, transformation, centered, drop", [
+#         (od, [2, 6, 10], 'all', 'arctic_crown', 'Atlantic', True),
+#     ],
+# )
+# def test_transformation(od, faces, varlist, transformation, centered, drop):
+#     ds = od._ds
+#     grid_coords = od.grid_coords
+#     args = {
+#         "ds": ds,
+#         "varlist": varlist,
+#         "centered": centered,
+#         "faces": faces,
+#         "drop": drop,
+#     }
+#     if transformation == 'arctic_crown':
+#         _transf = LLC.arctic_crown
+#     elif transformation == 'arctic_centered':
+#         _transf = LLC.arctic_centered
+#     ds = _transf(**args)
 
 
 def _is_connect(faces, rotated=False):

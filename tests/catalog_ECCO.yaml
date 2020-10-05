@@ -13,6 +13,7 @@ sources:
       urlpath: './tests/Data/ECCO_v4/UVEL/UVEL_1992_01.nc'
       xarray_kwargs:
         engine: netcdf4
+        drop_variables: ['time_bnds']
     metadata:
       swap_dims:
         k: Z
@@ -31,6 +32,7 @@ sources:
       urlpath: './tests/Data/ECCO_v4/VVEL/VVEL_1992_01.nc'
       xarray_kwargs:
         engine: netcdf4
+        drop_variables: ['time_bnds']
     metadata:
       swap_dims:
         k: Z
@@ -45,9 +47,10 @@ sources:
     description: Test ECCO data
     driver: netcdf
     args:
-      urlpath: './tests/Data/ECCO_v4/THETA/THETA_1992_01.nc'
+      urlpath: '.tests/Data/ECCO_v4/THETA/THETA_1992_01.nc'
       xarray_kwargs:
         engine: netcdf4
+        drop_variables: ['time_bnds']
     metadata:
       swap_dims:
         k: Z
@@ -64,6 +67,7 @@ sources:
     args:
       urlpath: './tests/Data/ECCO_v4/GRID/ECCO-GRID.nc'
       xarray_kwargs:
+        engine: netcdf4
     metadata:
       swap_dims:
         k: Z

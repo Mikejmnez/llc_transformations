@@ -4,7 +4,7 @@ import numpy as _np
 import sys
 sys.path.append('/Users/Mikejmnez/llc_transformations/llc_rearrange/')
 from LLC_rearrange import LLCtransformation as LLC
-from LLC_rearrange import make_chunks, make_array, pos_chunks, chunk_sizes, face_connect, arct_connect
+from LLC_rearrange import make_chunks, make_array, pos_chunks, chunk_sizes, face_connect, arct_connect, init_vars
 from LLC_rearrange import Dims
 from oceanspy import open_oceandataset
 
@@ -258,16 +258,36 @@ def test_transformation(od, faces, varlist, transf, centered, drop, expNX,
         (od, 200, 400, 100),
         (od, None, None, 'Five'),
         (od, 'Four', None, None),
+        (od, 0, 0, 0),
     ]
 )
 def test_make_vars(od, tNX, tNY, X0):
-    ds = od._ds
-    if isinstance(tNX + tNY + X0, int):
+    ds = od._ds.reset_coords()
+    if isinstance(tNX, int) and isinstance(tNY, int) and isinstance(X0, int):
         nds = make_array(ds, tNX, tNY, X0)
         assert (set(nds.dims) - set(ds.dims)) == set([])
+        assert nds.dims['X'] == tNX
+        assert nds.dims['Y'] == tNY
+        assert nds.dims['Z'] == ds.dims['Z']
+        assert nds.dims['time'] == ds.dims['time']
     else:
         with pytest.raises(TypeError):
             nds = make_array(ds, tNX, tNY, X0)
+
+
+@pytest.mark.parametrize(
+    "od, tNX, tNY, X0, varlist", [
+        (od, 100, 200, 0, ['T']),
+        (od, 200, 400, 10, ['U']),
+        (od, 200, 400, 0, ['T', 'U', 'V'])
+    ]
+)
+def test_init_vars(od, tNX, tNY, X0, varlist):
+    ds = od._ds.reset_coords()
+    nds = make_array(ds, tNX, tNY, X0)
+    nds = init_vars(ds, nds, varlist)
+    for var in varlist:
+        assert set(ds[var].dims) - set(nds[var].dims) == set(["face"])
 
 
 def _is_connect(faces, rotated=False):
